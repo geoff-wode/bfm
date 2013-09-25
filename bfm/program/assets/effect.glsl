@@ -39,7 +39,7 @@ shader VSpassthrutransform(
 
 //-----------------------------------------------------------------------
 
-uniform float PlanetRadius = 50.0f;
+uniform float PlanetRadius;
 uniform sampler2D HeightMapSampler;
 
 shader VSdisplacementMap(

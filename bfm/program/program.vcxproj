@@ -11,10 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\terrain.cpp" />
+    <ClCompile Include="src\terraintile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\effect.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\camera.h" />
+    <ClInclude Include="include\effect.h" />
+    <ClInclude Include="include\glbuffers.h" />
+    <ClInclude Include="include\logging.h" />
+    <ClInclude Include="include\terrain.h" />
+    <ClInclude Include="include\texture2d.h" />
+    <ClInclude Include="include\timer.h" />
+    <ClInclude Include="include\vao.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{785DD223-1863-46CD-951E-9E687F053A85}</ProjectGuid>
