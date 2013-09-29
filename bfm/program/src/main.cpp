@@ -161,14 +161,14 @@ static void Initialise()
   glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
   LOG("GL version: %d.%d\n", majorVersion, minorVersion);
 
-  if ((majorVersion < 4) || (minorVersion < 3))
-  {
-    char msg[256];
-    sprintf(msg, "OpenGL v4.3 or better needed (current is %d.%d)\nWill quit when message box closed.", majorVersion, minorVersion);
-    LOG(msg);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Cannot run application", msg, NULL);
-    exit(EXIT_FAILURE);
-  }
+  //if ((majorVersion < 4) || (minorVersion < 3))
+  //{
+  //  char msg[256];
+  //  sprintf(msg, "OpenGL v4.3 or better needed (current is %d.%d)\nWill quit when message box closed.", majorVersion, minorVersion);
+  //  LOG(msg);
+  //  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Cannot run application", msg, NULL);
+  //  exit(EXIT_FAILURE);
+  //}
 
   LOG("GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
   LOG("Vendor: %s\n", glGetString(GL_VENDOR));
