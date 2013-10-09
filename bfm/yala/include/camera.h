@@ -3,10 +3,15 @@
 
 #include <glm/glm.hpp>
 
-
-struct Camera
+class Camera
 {
+public:
+  Camera(size_t screenWidth, size_t screenHeight);
+  void Update(float elapsedMS);
+
   float fov;
+  float tanFoVOver2;          // == tan(field_of_view_angle / 2)
+  size_t displayResolutionX;  // number of pixels in X
   float aspectRatio;
   float nearClip;
   float farClip;
@@ -23,8 +28,5 @@ struct Camera
   glm::mat4 projectionMatrix;
   glm::mat4 viewProjectionMatrix;
 };
-
-void CameraInit(Camera& camera);
-void CameraUpdate(float elapsedMS, Camera& camera);
 
 #endif // __CAMERA__
