@@ -26,6 +26,38 @@ void Effect::Enable()
 }
 
 //--------------------------------------------------------------
+void Effect::Appply()
+{
+  BOOST_FOREACH(auto param, parameters)
+  {
+    if (param.second.modified)
+    {
+      switch (param.second.type)
+      {
+      case GL_INT:          glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
+      case GL_UNSIGNED_INT: glUniform1uiv(param.second.location, 1, (unsigned int*)param.second.cache); break;
+
+      case GL_FLOAT:        glUniform1fv(param.second.location, 1, (float*)param.second.cache); break;
+      case GL_FLOAT_VEC2:   glUniform2fv(param.second.location, 1, (float*)param.second.cache); break;
+      case GL_FLOAT_VEC3:   glUniform3fv(param.second.location, 1, (float*)param.second.cache); break;
+      case GL_FLOAT_VEC4:   glUniform4fv(param.second.location, 1, (float*)param.second.cache); break;
+
+      case GL_FLOAT_MAT2:   glUniformMatrix2fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
+      case GL_FLOAT_MAT3:   glUniformMatrix3fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
+      case GL_FLOAT_MAT4:   glUniformMatrix4fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
+
+      case GL_SAMPLER_1D:   glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
+      case GL_SAMPLER_2D:   glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
+      case GL_SAMPLER_3D:   glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
+        
+      default: break;
+      }
+      param.second.modified = false;
+    }
+  }
+}
+
+//--------------------------------------------------------------
 bool Effect::Load(const char* const effectFilename, const char* const programName)
 {
   bool loaded = false;
@@ -86,39 +118,11 @@ void Effect::ParseParams()
 			// not a named uniform block...
 			char uniformName[256] = { 0 };
 			glGetActiveUniformName(programHandle, i, sizeof(uniformName)-1, NULL, uniformName);
-      const GLint location = glGetUniformLocation(programHandle, uniformName);
-      if (0 == std::strcmp("WorldMatrix", uniformName))                   
-      {
-        WorldMatrix.program = programHandle;
-        WorldMatrix.location = location;
-      }
-      else if (0 == std::strcmp("ViewMatrix", uniformName))               
-      {
-        ViewMatrix.program = programHandle;
-        ViewMatrix.location = location;
-      }
-      else if (0 == std::strcmp("ProjectionMatrix", uniformName))         
-      {
-        ProjectionMatrix.program = programHandle;
-        ProjectionMatrix.location = location;
-      }
-      else if (0 == std::strcmp("ViewProjectionMatrix", uniformName))     
-      {
-        ViewProjectionMatrix.program = programHandle;
-        ViewProjectionMatrix.location = location;
-      }
-      else if (0 == std::strcmp("WorldViewMatrix", uniformName))          
-      {
-        WorldViewMatrix.program = programHandle;
-        WorldViewMatrix.location = location;
-      }
-      else if (0 == std::strcmp("WorldViewProjectionMatrix", uniformName))
-      {
-        WorldViewProjectionMatrix.program = programHandle;
-        WorldViewProjectionMatrix.location = location;
-      }
 
-      parameters[uniformName] = location;
+      EffectUniform u;
+      u.location = glGetUniformLocation(programHandle, uniformName);
+      u.type = types[i];
+      parameters[uniformName] = u;
 		}
 	}
 }

@@ -19,17 +19,13 @@ public:
   // Call this to make the effect "active".
   void Enable();
 
-  // The following uniform parameters are automatically available to any effect which
-  // uses them.
-  FloatMat4EffectUniform WorldMatrix;
-  FloatMat4EffectUniform ViewMatrix;
-  FloatMat4EffectUniform ProjectionMatrix;
-  FloatMat4EffectUniform ViewProjectionMatrix;
-  FloatMat4EffectUniform WorldViewMatrix;
-  FloatMat4EffectUniform WorldViewProjectionMatrix;
+  // Update any changes to the effect's parameters which have happened since the last time
+  // Apply was called.
+  // Called automatically by Device::Draw to ensure the GPU remains sync'd with the CPU.
+  void Appply();
 
 protected:
-  typedef std::map<std::string, GLuint> ParameterList;
+  typedef std::map<std::string, EffectUniform> ParameterList;
   ParameterList parameters;
 
   GLuint programHandle;

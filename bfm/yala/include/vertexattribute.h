@@ -8,7 +8,8 @@ namespace VertexSemantic
 {
   enum Enum
   {
-    Position,
+    PositionLow,
+    PositionHigh,
     Normal,
     Texture0,
     Texture1,

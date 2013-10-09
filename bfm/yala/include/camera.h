@@ -7,26 +7,26 @@ class Camera
 {
 public:
   Camera(size_t screenWidth, size_t screenHeight);
-  void Update(float elapsedMS);
+  void Update(double elapsedMS);
 
-  float fov;
-  float tanFoVOver2;          // == tan(field_of_view_angle / 2)
+  double fov;
+  double tanFoVOver2;          // == tan(field_of_view_angle / 2)
   size_t displayResolutionX;  // number of pixels in X
-  float aspectRatio;
-  float nearClip;
-  float farClip;
-  float yaw;
-  float pitch;
-  float roll;
-  float speed;
-  glm::vec3 movement;
-  glm::vec3 position;
-  glm::vec3 up;
-  glm::vec3 forward;
-  glm::vec3 right;
-  glm::mat4 viewMatrix;
-  glm::mat4 projectionMatrix;
-  glm::mat4 viewProjectionMatrix;
+  double aspectRatio;
+  double nearClip;
+  double farClip;
+  double yaw;
+  double pitch;
+  double roll;
+  double speed;
+  glm::dvec3 movement;
+  glm::dvec3 position;
+  glm::dvec3 up;
+  glm::dvec3 forward;
+  glm::dvec3 right;
+  glm::dmat4 viewMatrix;
+  glm::dmat4 projectionMatrix;
+  glm::dmat4 viewProjectionMatrix;
 };
 
 #endif // __CAMERA__

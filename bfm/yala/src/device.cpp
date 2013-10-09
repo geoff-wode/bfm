@@ -103,6 +103,8 @@ void Device::Draw(GLenum primitiveType, size_t start, size_t count, const Render
 {
   ApplyRenderState(renderState);
 
+  renderState.effect->Appply();
+
   const boost::shared_ptr<IndexBuffer> indexBuffer = renderState.vertexArray->GetIndexBuffer();
   if (indexBuffer)
   {

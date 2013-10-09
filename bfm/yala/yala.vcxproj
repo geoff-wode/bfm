@@ -14,9 +14,10 @@
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\device.cpp" />
     <ClCompile Include="src\effect.cpp" />
+    <ClCompile Include="src\effectuniform.cpp" />
     <ClCompile Include="src\indexbuffer.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\terrain.cpp" />
+    <ClCompile Include="src\rterendergeometryeffect.cpp" />
     <ClCompile Include="src\texture2d.cpp" />
     <ClCompile Include="src\uniformbuffer.cpp" />
     <ClCompile Include="src\vertexarray.cpp" />
@@ -35,9 +36,7 @@
     <ClInclude Include="include\effectuniform.h" />
     <ClInclude Include="include\indexbuffer.h" />
     <ClInclude Include="include\logging.h" />
-    <ClInclude Include="include\material.h" />
-    <ClInclude Include="include\mesh.h" />
-    <ClInclude Include="include\terrain.h" />
+    <ClInclude Include="include\rterendergeometryeffect.h" />
     <ClInclude Include="include\texture2d.h" />
     <ClInclude Include="include\uniformbuffer.h" />
     <ClInclude Include="include\vertexarray.h" />

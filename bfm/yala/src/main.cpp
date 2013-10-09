@@ -1,16 +1,24 @@
 #include <SDL.h>
+#include <cmath>
 #include <device.h>
 #include <logging.h>
 #include <camera.h>
 #include <indexbuffer.h>
 #include <vertexbuffer.h>
 #include <vertexarray.h>
+#include <rterendergeometryeffect.h>
 
 //-------------------------------------------------------------------
 
 static void PollEvents();
 static void HandleInput(Camera& camera);
 static boost::shared_ptr<VertexArray> BuildVertexArray();
+
+// Encode a double precision in 2 floats.
+// See http://blogs.agi.com/insight3d/index.php/2008/09/03/precisions-precisions
+// for the unexpurgated horror.
+static void DoubleToFloat(double value, float& low, float& high);
+static void DoubleToFloat(const glm::dvec3& value, glm::vec3& low, glm::vec3& high);
 
 //-------------------------------------------------------------------
 
@@ -36,11 +44,11 @@ int main(int argc, char* argv[])
   if (!device.Initialise("YALA")) { return 0; }
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
-  Effect effect;
+  RTERenderGeometryEffect effect;
   effect.Load("effects\\rendergeometry.glsl", "RenderGeometry");
 
   Camera camera(device.BackbufferWidth, device.BackbufferHeight);
-  camera.position = glm::vec3(0,10,10);
+  camera.position = glm::dvec3(0,10,10);
 
   boost::shared_ptr<VertexArray> vertexArray = BuildVertexArray();
 
@@ -48,7 +56,7 @@ int main(int argc, char* argv[])
   renderState.effect = &effect;
 
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  glm::mat4 worldTransform = glm::mat4(1);
+  glm::dmat4 worldTransform = glm::dmat4(1);
 
   unsigned int lastTime = 0;
   while (!quit)
@@ -72,7 +80,20 @@ int main(int argc, char* argv[])
       {
         device.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, clearState);
       
-        effect.WorldViewProjectionMatrix.Set(camera.viewProjectionMatrix * worldTransform);
+        // Create a model-view matrix and set its translation to (0,0,0) before using it to
+        // create the full MVP matrix...
+        glm::dmat4 modelViewMatrix = camera.viewMatrix * worldTransform;
+        modelViewMatrix[3][0] = 0.0;
+        modelViewMatrix[3][1] = 0.0;
+        modelViewMatrix[3][2] = 0.0;
+        
+        glm::vec3 camPosLow;
+        glm::vec3 camPosHigh;
+        DoubleToFloat(camera.position, camPosLow, camPosHigh);
+
+        effect.CameraPositionLow->Set(camPosLow);
+        effect.CameraPositionHigh->Set(camPosHigh);
+        effect.RTEWorldViewProjectionMatrix->Set(glm::mat4(camera.projectionMatrix * modelViewMatrix));
 
         renderState.drawState.culling.windingOrder = GL_CW;
 
@@ -129,15 +150,46 @@ static void HandleInput(Camera& camera)
 }
 
 //-----------------------------------------------------------
+// Encode a double precision in 2 floats.
+// See http://blogs.agi.com/insight3d/index.php/2008/09/03/precisions-precisions
+// for the unexpurgated horror.
+static void DoubleToFloat(double value, float& low, float& high)
+{
+  static const double encoder = 1 << 16;
+
+  if (value >= 0.0)
+  {
+    const double doubleHigh = floor(value / encoder) * encoder;
+    high = (float)doubleHigh;
+    low = (float)(value - doubleHigh);
+  }
+  else
+  {
+    const double doubleHigh = floor(-value / encoder) * encoder;
+    high = (float)-doubleHigh;
+    low = (float)(value + doubleHigh);
+  }
+}
+
+static void DoubleToFloat(const glm::dvec3& value, glm::vec3& low, glm::vec3& high)
+{
+  DoubleToFloat(value.x, low.x, high.x);
+  DoubleToFloat(value.y, low.y, high.y);
+  DoubleToFloat(value.z, low.z, high.z);
+}
+
+//-----------------------------------------------------------
 static boost::shared_ptr<VertexArray> BuildVertexArray()
 {
   struct Vertex
   {
-    glm::vec3 position;
+    glm::vec3 positionLow;
+    glm::vec3 positionHigh;
   };
 
   VertexLayout vertexLayout;
-  vertexLayout.AddAttribute(VertexAttribute(VertexSemantic::Position, GL_FLOAT_VEC3, offsetof(Vertex,position)));
+  vertexLayout.AddAttribute(VertexAttribute(VertexSemantic::PositionLow, GL_FLOAT_VEC3, offsetof(Vertex,positionLow)));
+  vertexLayout.AddAttribute(VertexAttribute(VertexSemantic::PositionHigh, GL_FLOAT_VEC3, offsetof(Vertex,positionHigh)));
   
   static const size_t numVertices = GridSize * GridSize;
   static const size_t numIndices = 2 * GridSize * (GridSize - 1);
@@ -149,7 +201,9 @@ static boost::shared_ptr<VertexArray> BuildVertexArray()
       for (int x = 0; x < GridSize; ++x)
       {
         static const float offset = (float)GridSize / 2;
-        vertices[x + (z * GridSize)].position = glm::vec3((float)x, 0.0f, (float)-z);
+        const glm::dvec3 position = glm::dvec3((double)x, 0.0f, (double)-z);
+        Vertex& vertex = vertices[x + (z * GridSize)];
+        DoubleToFloat(position, vertex.positionLow, vertex.positionHigh);
       }
     }
   }
