@@ -9,13 +9,13 @@ struct Texture2D
   Texture2D();
   ~Texture2D();
 
-  void LoadHeightMap(const void* const data, size_t width, size_t height);
-
   size_t width;
   size_t height;
 
   GLuint texture;
   GLuint sampler;
 };
+
+boost::shared_ptr<Texture2D> LoadHeightMap(const void* const data, size_t width, size_t height);
 
 #endif // __TEXTURE2D__

@@ -13,6 +13,8 @@ public:
   EffectUniform* RTEWorldViewProjectionMatrix;
   EffectUniform* CameraPositionLow;
   EffectUniform* CameraPositionHigh;
+  EffectUniform* FarClipPlaneDistance;
+  EffectUniform* LogDepthConstant;
 
 private:
   virtual void Initialise();

@@ -258,6 +258,7 @@ void Device::ApplyTextureUnits(const boost::shared_ptr<Texture2D> textures[])
       }
     }
   }
+  glActiveTexture(GL_TEXTURE0 + RenderState::MaxTextures);
 }
 //-----------------------------------------------------------
 void Device::ApplyEffect(Effect* effect)

@@ -15,11 +15,13 @@
     <ClCompile Include="src\device.cpp" />
     <ClCompile Include="src\effect.cpp" />
     <ClCompile Include="src\effectuniform.cpp" />
+    <ClCompile Include="src\framebuffer.cpp" />
     <ClCompile Include="src\indexbuffer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\rterendergeometryeffect.cpp" />
     <ClCompile Include="src\texture2d.cpp" />
     <ClCompile Include="src\uniformbuffer.cpp" />
+    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\vertexarray.cpp" />
     <ClCompile Include="src\vertexattribute.cpp" />
     <ClCompile Include="src\vertexbuffer.cpp" />
@@ -34,11 +36,13 @@
     <ClInclude Include="include\device.h" />
     <ClInclude Include="include\effect.h" />
     <ClInclude Include="include\effectuniform.h" />
+    <ClInclude Include="include\framebuffer.h" />
     <ClInclude Include="include\indexbuffer.h" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\rterendergeometryeffect.h" />
     <ClInclude Include="include\texture2d.h" />
     <ClInclude Include="include\uniformbuffer.h" />
+    <ClInclude Include="include\utils.h" />
     <ClInclude Include="include\vertexarray.h" />
     <ClInclude Include="include\vertexattribute.h" />
     <ClInclude Include="include\vertexbuffer.h" />
