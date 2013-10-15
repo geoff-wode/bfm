@@ -186,11 +186,11 @@ int main(int argc, char* argv[])
 
   device.Initialise(1280, 720, "");
 
-  static const double terrainWidth = 6000000;
+  static const double terrainWidth = 6000; // KILOMETERS!
 
   camera.Initialise(device.BackbufferWidth, device.BackbufferHeight);
   camera.position = glm::dvec3(0, 0, terrainWidth * 2);
-  camera.farClip = 100000000;
+  camera.farClip = 100000000; // KILOMETERS!
   camera.nearClip = 1;
 
   effect.Load("effects\\terrain.glsl", "Terrain");
@@ -201,12 +201,16 @@ int main(int argc, char* argv[])
 
   // Constant controlling depth precision (smaller increases precision at distance at the
   // expense of loosing precision close-in.
-  static const float logDepthConstant = 0.001f;
+  // See terrain.glsl for the gory details.
+  static const float logDepthConstant = 1.0f;
+  static const float logDepthOffset = 2.0f;
+  static const float logDepthDivisor = (float)(1.0 / (glm::log(logDepthConstant * camera.farClip) + logDepthOffset));
 
   // The camera's far plane distance never changes so these values (used in logarithmic
   // depth buffer) can be set just once.
   effect.LogDepthConstant->Set(logDepthConstant);
-  effect.LogDepthDivisor->Set((float)glm::log(logDepthConstant * camera.farClip) + 1.0f);
+  effect.LogDepthOffset->Set(logDepthOffset);
+  effect.LogDepthDivisor->Set(logDepthDivisor);
 
   RenderState renderState;
   renderState.drawState.polygonMode = GL_LINE;

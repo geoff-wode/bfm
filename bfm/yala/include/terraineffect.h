@@ -32,21 +32,25 @@ public:
   EffectUniform* CameraPositionLow;
   EffectUniform* CameraPositionHigh;
 
-  // Values with the prefix "LogDepth" control the logarithmic depth buffer.
-  // Logarithmic depth is computed as
+  // Values to configure the computation of logarithmic rather than linear depth.
+  // See http://www.gamedev.net/blog/73/entry-2006307-tip-of-the-day-logarithmic-zbuffer-artifacts-fix
+  // but basically:
   //
-  //  | 2 * [ ( C * zClip) + 1] |
-  //  | ----------------------- | - 1
-  //  |    log(C * fClip) + 1   |
+  //          | log((C * zClip) + offset) |
+  //  depth = | ------------------------- |
+  //          |  log((C * far) + offset)  |
   //
   // where,
   // - C is a constant controlling depth precision (smaller increases precision at
   //    distance at the expense of loosing precision close-in.
   // - zClip is the clip-space (ie. post-projection transform) z coordinate
-  // - fClip is the distance to the far clip plane (in world units).
-  // Note that the divisor only changes when the far clip distance changes, so this
-  // should be computed outside of the vertex shader.
+  // - offset controls how close the near clip plane can be to the camera (bigger == less near clipping)
+  //    (e.g. 2.0 gives a clip plane of a few centimeters)
+  // - far is the distance from the camera to the far clip plane (in world units).
+
+  // Since the divisor is constant for a whole render frame, it is precomputed on the CPU.
   EffectUniform* LogDepthConstant;
+  EffectUniform* LogDepthOffset;
   EffectUniform* LogDepthDivisor;
 
 private:
@@ -57,6 +61,7 @@ private:
     CameraPositionHigh = &parameters["CameraPositionHigh"];
     LogDepthDivisor = &parameters["LogDepthDivisor"];
     LogDepthConstant = &parameters["LogDepthConstant"];
+    LogDepthOffset = &parameters["LogDepthOffset"];
   }
 };
 

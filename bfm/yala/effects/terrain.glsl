@@ -13,22 +13,22 @@ uniform vec3 CameraPositionHigh;
 // set to (0,0,0) before the projection transform is applied)...
 uniform mat4 WorldViewProjectionMatrix;
 
-// Constant controlling the precision of the logarithmic depth buffer.
-// Smaller values increase precision at a distance but reduce precision close in. Larger values
-// have the obvious opposite effect.
+// Per-frame constants controlling the computation of logarithmic depth.
 uniform float LogDepthConstant;
-
-// log(LogDepthConstant * fClip) + 1
+uniform float LogDepthOffset;
 uniform float LogDepthDivisor;
 
 //---------------------------------------------------------
 
 struct VSOut
 {
-  float zClip;
+  vec4 clippedPos;
 };
 
 //---------------------------------------------------------
+
+//#define USE_GPU_RTE
+#define USE_GPU_RTE_DSFUN90
 
 shader VS
   (
@@ -37,17 +37,31 @@ shader VS
     out VSOut vsOut
   )
 {
+#if defined(USE_GPU_RTE)
+
   // Compute the model position in eye space given double-precision vertex and camera positions
   // encoded as high and low single-precision values...
   const vec3 highDifference = PositionHigh - CameraPositionHigh;
   const vec3 lowDifference = PositionLow - CameraPositionLow;
+  
+#elif defined(USE_GPU_RTE_DSFUN90)
+
+  // Use "DSFUN90" to compute the model position in eye space given double-precision vertex and camera positions
+  // encoded as high and low single-precision values...
+  const vec3 t1 = PositionLow - CameraPositionLow;
+  const vec3 e = t1 - PositionLow;
+  const vec3 t2 = ((-CameraPositionLow - e) + (PositionLow - (t1 - e))) + PositionHigh - CameraPositionHigh;
+  const vec3 highDifference = t1 + t2;
+  const vec3 lowDifference = t2 - (highDifference - t1);
+
+#endif
+
   // The model position, relative-to-eye...
   const vec4 rtePos = vec4(highDifference + lowDifference, 1);
-  
-  const vec4 clippedPosition = WorldViewProjectionMatrix * rtePos;
-  gl_Position = clippedPosition;
 
-  vsOut.zClip = clippedPosition.z;
+  // Transform, project and clip...
+  vsOut.clippedPos = WorldViewProjectionMatrix * rtePos;
+  gl_Position = vsOut.clippedPos;
 }
 
 //---------------------------------------------------------
@@ -58,20 +72,24 @@ shader FS
     out vec4 colour
   )
 {
-  // Compute logarithmic depth instead of the default gl_FragCoord.z emitted by GL:
+  // Compute logarithmic depth instead of the default gl_FragCoord.z emitted by GL.
+  // See http://www.gamedev.net/blog/73/entry-2006307-tip-of-the-day-logarithmic-zbuffer-artifacts-fix
+  // but basically:
   //
-  //  | 2 * [ ( C * zClip) + 1] |
-  //  | ----------------------- | - 1
-  //  |    log(C * fClip) + 1   |
+  //          | log((C * zClip) + offset) |
+  //  depth = | ------------------------- |
+  //          |  log((C * far) + offset)  |
   //
   // where,
   // - C is a constant controlling depth precision (smaller increases precision at
   //    distance at the expense of loosing precision close-in.
   // - zClip is the clip-space (ie. post-projection transform) z coordinate
-  // - fClip is the distance to the far clip plane (in world units).
-  // Since the divisor is constant for a whole render frame, it is precomputed on the CPU.
-  float upperLine = 2.0f * ((LogDepthConstant * vsIn.zClip) + 1.0f);
-  gl_FragDepth = (upperLine / LogDepthDivisor) - 1.0f;
+  // - offset controls how close the near clip plane can be to the camera (bigger == less near clipping)
+  //    (e.g. 2.0 gives a clip plane of a few centimeters)
+  // - far is the distance from the camera to the far clip plane (in world units).
+  // Since the divisor is constant for a whole render frame, "1/log((C * far) + near)" is
+  // precomputed on the CPU.
+  gl_FragDepth = log((LogDepthConstant * vsIn.clippedPos.z) + LogDepthOffset) * LogDepthDivisor;
 
   colour = vec4(0,1,0,1);
 }

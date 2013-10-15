@@ -2,10 +2,15 @@
 
 //-----------------------------------------------------------------
 // Encode a double precision in 2 floats.
-// See http://blogs.agi.com/insight3d/index.php/2008/09/03/precisions-precisions
-// for the unexpurgated horror.
+
+//#define USE_GPU_RTE
+#define USE_GPU_RTE_DSFUN90
+
 void DoubleToFloat(double value, float& low, float& high)
 {
+#if defined(USE_GPU_RTE)
+  // See http://blogs.agi.com/insight3d/index.php/2008/09/03/precisions-precisions
+  // for the unexpurgated horror.
   static const double encoder = 1 << 16;
 
   if (value >= 0.0)
@@ -20,6 +25,14 @@ void DoubleToFloat(double value, float& low, float& high)
     high = (float)-doubleHigh;
     low = (float)(value + doubleHigh);
   }
+#elif defined(USE_GPU_RTE_DSFUN90)
+  // Encode the double by casting it to a float (high part) and storing the error
+  // created by doing that (low part).
+  high = (float)value;
+  low = (float)(value - high);
+#else
+#error !!
+#endif
 }
 
 //-----------------------------------------------------------------
