@@ -61,12 +61,15 @@ struct DrawState
 {
   DrawState()
     : depthBufferMask(true),
-      colourMask(true, true, true, true)
+      colourMask(true, true, true, true),
+      polygonMode(GL_FILL)
   {
   }
 
   bool depthBufferMask;
   glm::bvec4 colourMask;
+
+  GLenum polygonMode;
 
   Culling culling;
   DepthTest depthTest;
@@ -75,11 +78,17 @@ struct DrawState
 //----------------------------------------------------------
 struct RenderState
 {
+  RenderState()
+    : effect(NULL), vertexArray(NULL)
+  {
+    std::memset(textureUnits, 0, sizeof(textureUnits));
+  }
+
   Effect* effect;
   VertexArray* vertexArray;
 
   static const size_t MaxTextures = 16;
-  boost::shared_ptr<Texture2D> textureUnits[MaxTextures];
+  Texture2D* textureUnits[MaxTextures];
 
   DrawState drawState;
 };
@@ -91,16 +100,21 @@ public:
   Device();
   ~Device();
 
-  bool Initialise(const char* const windowTitle);
+  bool Initialise(size_t backbufferWidth, size_t backbufferHeight, const char* const windowTitle);
 
   void Clear(GLenum buffers, const ClearState& clearState);
+
   void Draw(GLenum primitiveType, size_t start, size_t count, const RenderState& renderState);
+
   void SwapBuffers();
 
-  size_t BackbufferWidth;
-  size_t BackbufferHeight;
+  const size_t& BackbufferWidth;
+  const size_t& BackbufferHeight;
 
 private:
+  size_t backbufferWidth;
+  size_t backbufferHeight;
+
   SDL_Window* mainWindow;
   SDL_GLContext glContext;
 
@@ -113,9 +127,10 @@ private:
   void ApplyDepthMask(bool mask);
   void ApplyCulling(const Culling& state);
   void ApplyDepthTest(const DepthTest& state);
-  void ApplyTextureUnits(const boost::shared_ptr<Texture2D> textures[]);
+  void ApplyTextureUnits(Texture2D* const textures[]);
   void ApplyEffect(Effect* effect);
   void ApplyVertexArray(VertexArray* vertexArray);
+  void ApplyPolygonMode(GLenum mode);
 };
 
 #endif // __DEVICE__

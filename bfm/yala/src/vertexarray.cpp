@@ -1,9 +1,26 @@
 #include <vertexarray.h>
 #include <boost/foreach.hpp>
 
-static GLuint Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer)
+
+VertexArray::VertexArray()
 {
-  GLuint vao;
+}
+
+VertexArray::~VertexArray()
+{
+  glDeleteVertexArrays(1, &vao);
+}
+
+void VertexArray::Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer)
+{
+  Initialise(vertexBuffer, NULL);
+}
+
+void VertexArray::Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer)
+{
+  this->vertexBuffer = vertexBuffer;
+  this->indexBuffer = indexBuffer;
+
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
   vertexBuffer->Enable();
@@ -24,23 +41,4 @@ static GLuint Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::sh
   glBindVertexArray(0);
   vertexBuffer->Disable();
   if (indexBuffer) { indexBuffer->Disable(); }
-
-  return vao;
-}
-
-VertexArray::VertexArray(boost::shared_ptr<VertexBuffer> vertexBuffer)
-  : vertexBuffer(vertexBuffer),
-    vao(Initialise(vertexBuffer, NULL))
-{
-}
-
-VertexArray::VertexArray(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer)
-  : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer),
-    vao(Initialise(vertexBuffer, indexBuffer))
-{
-}
-
-VertexArray::~VertexArray()
-{
-  glDeleteVertexArrays(1, &vao);
 }

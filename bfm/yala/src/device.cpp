@@ -35,7 +35,7 @@ static void ConfigureOpenGL(const ClearState& clearState, const DrawState& drawS
 
 //----------------------------------------------------------
 Device::Device()
-  : BackbufferWidth(0), BackbufferHeight(0)
+  : BackbufferWidth(backbufferWidth), BackbufferHeight(backbufferHeight)
 {
 }
 
@@ -48,16 +48,12 @@ Device::~Device()
 }
 
 //----------------------------------------------------------
-bool Device::Initialise(const char* const windowTitle)
+bool Device::Initialise(size_t backbufferWidth, size_t backbufferHeight, const char* const windowTitle)
 {
-  if (!BackbufferWidth || !BackbufferHeight)
-  {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "error", "No backbuffer dimension set\n", NULL);
-    LOG("No backbuffer dimension set\n");
-    return false;
-  }
+  bool isInitialised = false;
 
-  bool initialised = false;
+  this->backbufferWidth = backbufferWidth;
+  this->backbufferHeight = backbufferHeight;
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -75,20 +71,25 @@ bool Device::Initialise(const char* const windowTitle)
     if (glContext)
     {
       SDL_ShowWindow(mainWindow);
-      initialised = true;
+      isInitialised = true;
     }
   }
 
-  ConfigureSDL();
-  ConfigureOpenGL(clearState, renderState.drawState);
-  ReportSDLConfig();
+  if (isInitialised)
+  {
+    ConfigureSDL();
+    ConfigureOpenGL(clearState, renderState.drawState);
+    ReportSDLConfig();
 
-  GLint maxTextureUnits;
-  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-  LOG("max. texture units: %d\n", maxTextureUnits);
-  ASSERT(RenderState::MaxTextures <= maxTextureUnits);
+    GLint maxTextureUnits;
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    LOG("max. texture units: %d\n", maxTextureUnits);
+    ASSERT(RenderState::MaxTextures <= maxTextureUnits);
+  }
 
-  return initialised;
+  SDL_SetRelativeMouseMode(SDL_TRUE);
+
+  return isInitialised;
 }
 
 //----------------------------------------------------------
@@ -171,6 +172,7 @@ void Device::ApplyRenderState(const RenderState& state)
   ApplyEffect(state.effect);
   ApplyVertexArray(state.vertexArray);
   ApplyTextureUnits(state.textureUnits);
+  ApplyPolygonMode(state.drawState.polygonMode);
 }
 //-----------------------------------------------------------
 void Device::ApplyColourMask(const glm::bvec4& mask)
@@ -238,7 +240,7 @@ void Device::ApplyDepthTest(const DepthTest& state)
   }
 }
 //-----------------------------------------------------------
-void Device::ApplyTextureUnits(const boost::shared_ptr<Texture2D> textures[])
+void Device::ApplyTextureUnits(Texture2D* const textures[])
 {
   for (size_t i = 0; i < RenderState::MaxTextures; ++i)
   {
@@ -279,6 +281,15 @@ void Device::ApplyVertexArray(VertexArray* vertexArray)
   }
 }
 //-----------------------------------------------------------
+void Device::ApplyPolygonMode(GLenum mode)
+{
+  if (mode != renderState.drawState.polygonMode)
+  {
+    renderState.drawState.polygonMode = mode;
+    glPolygonMode(GL_FRONT_AND_BACK, mode);
+  }
+}
+//-----------------------------------------------------------
 static void ConfigureOpenGL(const ClearState& clearState, const DrawState& drawState)
 {
   glInitLibrary();
@@ -303,4 +314,6 @@ static void ConfigureOpenGL(const ClearState& clearState, const DrawState& drawS
 
   glDepthFunc(drawState.depthTest.function);
   drawState.depthTest.enabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+
+  glPolygonMode(GL_FRONT_AND_BACK, drawState.polygonMode);
 }

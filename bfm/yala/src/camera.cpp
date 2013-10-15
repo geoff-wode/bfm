@@ -2,7 +2,11 @@
 #include <glm/ext.hpp>
 
 
-Camera::Camera(size_t screenWidth, size_t screenHeight)
+Camera::Camera()
+{
+}
+
+void Camera::Initialise(size_t screenWidth, size_t screenHeight)
 {
   displayResolutionX = screenWidth;
 

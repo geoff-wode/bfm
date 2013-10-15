@@ -16,6 +16,4 @@ struct Texture2D
   GLuint sampler;
 };
 
-boost::shared_ptr<Texture2D> LoadHeightMap(const void* const data, size_t width, size_t height);
-
 #endif // __TEXTURE2D__

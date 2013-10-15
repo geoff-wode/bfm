@@ -6,7 +6,9 @@
 class Camera
 {
 public:
-  Camera(size_t screenWidth, size_t screenHeight);
+  Camera();
+
+  void Initialise(size_t screenWidth, size_t screenHeight);
   void Update(double elapsedMS);
 
   double fov;

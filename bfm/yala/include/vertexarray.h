@@ -10,9 +10,11 @@
 class VertexArray
 {
 public:
-  VertexArray(boost::shared_ptr<VertexBuffer> vertexBuffer);
-  VertexArray(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer);
+  VertexArray();
   ~VertexArray();
+
+  void Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer);
+  void Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer);
 
   void Enable() { glBindVertexArray(vao); }
 
@@ -22,9 +24,9 @@ public:
   const VertexLayout& GetVertexLayout() const { return vertexBuffer->GetVertexLayout(); }
 
 private:
+  GLuint vao;
   boost::shared_ptr<VertexBuffer> vertexBuffer;
   boost::shared_ptr<IndexBuffer> indexBuffer;
-  GLuint vao;
 };
 
 #endif // __VERTEX_ARRAY__

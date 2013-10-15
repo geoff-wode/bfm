@@ -23,9 +23,26 @@ void DoubleToFloat(double value, float& low, float& high)
 }
 
 //-----------------------------------------------------------------
+
+void DoubleToFloat(const glm::dvec2& value, glm::vec2& low, glm::vec2& high)
+{
+  DoubleToFloat(value.x, low.x, high.x);
+  DoubleToFloat(value.y, low.y, high.y);
+}
+
+//-----------------------------------------------------------------
 void DoubleToFloat(const glm::dvec3& value, glm::vec3& low, glm::vec3& high)
 {
   DoubleToFloat(value.x, low.x, high.x);
   DoubleToFloat(value.y, low.y, high.y);
   DoubleToFloat(value.z, low.z, high.z);
+}
+
+//-----------------------------------------------------------------
+void DoubleToFloat(const glm::dvec4& value, glm::vec4& low, glm::vec4& high)
+{
+  DoubleToFloat(value.x, low.x, high.x);
+  DoubleToFloat(value.y, low.y, high.y);
+  DoubleToFloat(value.z, low.z, high.z);
+  DoubleToFloat(value.w, low.w, high.w);
 }
