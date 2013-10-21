@@ -7,8 +7,10 @@
 class IndexBuffer
 {
 public:
-  IndexBuffer(size_t indexCount, GLenum indexType, GLenum usage, const void* const data = NULL);
+  IndexBuffer();
   ~IndexBuffer();
+
+  void Initialise(size_t indexCount, GLenum indexType, GLenum usage, const void* const data = NULL);
 
   void Enable() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer); }
   void Disable() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }

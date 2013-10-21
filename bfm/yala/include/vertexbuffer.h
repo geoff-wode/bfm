@@ -8,9 +8,10 @@
 class VertexBuffer
 {
 public:
-  VertexBuffer(const VertexLayout& vertexLayout, size_t vertexCount, GLenum usage, const void* const data = NULL);
+  VertexBuffer();
   ~VertexBuffer();
 
+  void Initialise(const VertexLayout& vertexLayout, size_t vertexCount, GLenum usage, const void* const data = NULL);
   void Enable() { glBindBuffer(GL_ARRAY_BUFFER, buffer); }
   void Disable() { glBindBuffer(GL_ARRAY_BUFFER, 0); }
 
@@ -21,9 +22,9 @@ public:
   const VertexLayout& GetVertexLayout() const { return vertexLayout; }
 
 private:
-  size_t vertexCount;
   GLuint buffer;
-  const VertexLayout vertexLayout;
+  size_t vertexCount;
+  VertexLayout vertexLayout;
 };
 
 #endif // __VERTEX_BUFFER__

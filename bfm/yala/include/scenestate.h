@@ -7,6 +7,7 @@
 
 struct SceneState
 {
+  float elapsedMS;
   Device* device;
   Camera* camera;
 };

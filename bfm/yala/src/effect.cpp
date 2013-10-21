@@ -58,6 +58,17 @@ void Effect::Appply()
 }
 
 //--------------------------------------------------------------
+void Effect::Initialise()
+{
+  WorldViewProjectionMatrix = &parameters["WorldViewProjectionMatrix"];
+  CameraPositionLow = &parameters["CameraPosition.Low"];
+  CameraPositionHigh = &parameters["CameraPosition.High"];
+  LogDepthDivisor = &parameters["LogDepthDivisor"];
+  LogDepthConstant = &parameters["LogDepthConstant"];
+  LogDepthOffset = &parameters["LogDepthOffset"];
+}
+
+//--------------------------------------------------------------
 bool Effect::Load(const char* const effectFilename, const char* const programName)
 {
   bool loaded = false;

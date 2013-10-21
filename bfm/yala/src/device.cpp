@@ -277,7 +277,10 @@ void Device::ApplyVertexArray(VertexArray* vertexArray)
   if (vertexArray != renderState.vertexArray)
   {
     renderState.vertexArray = vertexArray;
-    vertexArray->Enable();
+    if (renderState.vertexArray)
+    {
+      vertexArray->Enable();
+    }
   }
 }
 //-----------------------------------------------------------

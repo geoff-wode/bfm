@@ -3,8 +3,8 @@
 //-----------------------------------------------------------------
 // Encode a double precision in 2 floats.
 
-//#define USE_GPU_RTE
-#define USE_GPU_RTE_DSFUN90
+#define USE_GPU_RTE
+//#define USE_GPU_RTE_DSFUN90
 
 void DoubleToFloat(double value, float& low, float& high)
 {

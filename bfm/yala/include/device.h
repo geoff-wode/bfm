@@ -85,6 +85,7 @@ struct RenderState
   }
 
   Effect* effect;
+
   VertexArray* vertexArray;
 
   static const size_t MaxTextures = 16;

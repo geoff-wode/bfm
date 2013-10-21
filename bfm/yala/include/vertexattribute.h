@@ -32,12 +32,10 @@ namespace VertexSemantic
 
 struct VertexAttribute
 {
-  VertexAttribute(VertexSemantic::Enum semantic, GLenum dataType, size_t offset);
-
-  const VertexSemantic::Enum semantic;
-  const GLenum type;                    // float, uint, etc.
-  const size_t elements;                // 1 for float, 2 for vec2, etc.
-  const size_t offset;                  // byte offset from start of vertex structure
+  VertexSemantic::Enum semantic;
+  GLenum type;                    // float, uint, etc.
+  size_t elements;                // 1 for float, 2 for vec2, etc.
+  size_t offset;                  // byte offset from start of vertex structure
 };
 
 #endif // __VERTEX_ATTRIBUTE__
