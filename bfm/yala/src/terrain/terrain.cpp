@@ -23,7 +23,7 @@
 #include <climits>
 #include <vector>
 #include <logging.h>
-#include <terrain/planet.h>
+#include <terrain/terrain.h>
 #include <boost/shared_ptr.hpp>
 
 //---------------------------------------------------------------
@@ -35,6 +35,11 @@ struct Vertex
 
 //---------------------------------------------------------------
 
+// Constants defining the basic grid geometry...
+static const size_t gridSize = 33;
+static const size_t vertexCount = gridSize * gridSize;
+static const size_t indexCount = 2 * gridSize * (gridSize - 1);
+
 // Global axes:
 static const glm::vec4 Up(0, 1, 0,0);
 static const glm::vec4 Down(0, -1, 0,0);
@@ -43,27 +48,33 @@ static const glm::vec4 Backward(0, 0, 1,0);
 static const glm::vec4 Left(-1, 0, 0,0);
 static const glm::vec4 Right(1, 0, 0,0);
 
-const float Planet::maxError = 4;
+const float Terrain::maxError = 4;
 
 //---------------------------------------------------------------
 
+static void BuildGeometry(VertexArray& geometry);
 static void BuildGrid(int size, Vertex vertices[]);
 static void BuildIndices(int size, unsigned short indices[]);
 
 //---------------------------------------------------------------
 
-Planet::Planet(float radius)
-  : radius(radius)
+Terrain::Terrain(float width)
+  : width(width)
 {
 }
 
-Planet::~Planet()
+Terrain::~Terrain()
 {
 }
 
 //---------------------------------------------------------------
-bool Planet::Initialise()
+bool Terrain::Initialise()
 {
+  if (!effect.Load("effects\\terrain.glsl", "Terrain")) { return false; }
+
+  InitialiseRootNode();
+  BuildGeometry(geometry);
+
   // I can't remember the web site that gave the formula (!) for this but basically
   // it boils down to working out how many times the width of the largest patch
   // (in world units) must be halved to end up with a patch that represents
@@ -73,50 +84,15 @@ bool Planet::Initialise()
   // Anyway, for e.g. a planet with a radius of the Earth (~6300000 metres) and a grid mesh
   // width of 33 vertices, there will be 13 levels of detail (zero is the top, least detailed
   // level).
-  const float log2r = glm::log(2 * radius, 2.0f);
-  const float log2grid = glm::log(2 * (float)gridSize * (float)gridSize, 2.0f);
-  maxLodLevel = glm::max(1U, (size_t)(log2r - log2grid));
-
-  if (!effect.Load("effects\\terrain.glsl", "Terrain")) { return false; }
-
-  faces.resize(1);
-  InitialiseFace(glm::rotate(90.0f, 1.0f, 0.0f, 0.0f), faces[0]); // front
-  //InitialiseFace(glm::rotate(90.0f, 1.0f, 1.0f, 0.0f) * glm::rotate(90.0f, 0.0f, 1.0f, 0.0f), faces[1]);
-
-  //InitialiseFace(Forward, Up, faces[1]);      // right
-  //InitialiseFace(Left, Up, faces[2]);         // back
-  //InitialiseFace(Backward, Up, faces[3]);     // left
-  //InitialiseFace(Right, Forward, faces[4]);   // top
-  //InitialiseFace(Right, Backward, faces[5]);  // bottom
-
-  static const VertexAttribute attributes[] =
-  {
-    { VertexSemantic::PositionLow, GL_FLOAT, 3, offsetof(Vertex, position) }
-  };
-
-  VertexLayout vertexLayout;
-  vertexLayout.AddAttribute(attributes[0]);
-
-  // A single vertex buffer for all 6 faces of the cube...
-  Vertex vertices[vertexCount];
-  BuildGrid(gridSize, vertices);
-  boost::shared_ptr<VertexBuffer> vertexBuffer(new VertexBuffer());
-  vertexBuffer->Initialise(vertexLayout, vertexCount, GL_STATIC_DRAW, vertices);
-
-  // Index buffer...
-  unsigned short indices[indexCount];
-  BuildIndices(gridSize, indices);
-  boost::shared_ptr<IndexBuffer> indexBuffer(new IndexBuffer());
-  indexBuffer->Initialise(indexCount, GL_UNSIGNED_SHORT, GL_STATIC_DRAW, indices);
-
-  // Create final vertex array:
-  geometry.Initialise(vertexBuffer, indexBuffer);
+  const float log2Width = glm::log(width, 2.0f);
+  const float log2Grid = glm::log(2 * (float)gridSize * (float)gridSize, 2.0f);
+  maxLodLevel = glm::max(1U, (size_t)(log2Width - log2Grid));
 
   // Initialise constant render state...
   renderState.effect = &effect;
   renderState.vertexArray = &geometry;
   renderState.drawState.polygonMode = GL_LINE;
-  renderState.drawState.culling.enabled = false;
+  renderState.drawState.culling.enabled = true;
   renderState.drawState.culling.windingOrder = GL_CW;
 
   visibleNodes.resize(128);
@@ -125,92 +101,35 @@ bool Planet::Initialise()
 }
 
 //---------------------------------------------------------------
-void Planet::InitialiseFace(const glm::mat4& orientation, Face& face)
-{
-  face.orientation = orientation;
 
-  for (size_t i = 0; i < 4; ++i)
-  {
-    const float halfWidth = radius * 0.5f;
-    glm::vec3 centre;
-    switch (i)
-    {
-    case Node::Corner::TL:
-      centre = glm::vec3(-halfWidth, 0.0, -halfWidth);
-      break;
-    case Node::Corner::TR:
-      centre = glm::vec3(halfWidth, 0.0, -halfWidth);
-      break;
-    case Node::Corner::BL:
-      centre = glm::vec3(-halfWidth, 0.0, halfWidth);
-      break;
-    case Node::Corner::BR:
-      centre = glm::vec3(halfWidth, 0.0, halfWidth);
-      break;
-    }
-    face.rootNodes[i] = InitialiseNode(face, 1, halfWidth, centre);
-    face.rootNodes[i]->parent = NULL;
-  }
-}
-
-//---------------------------------------------------------------
-boost::shared_ptr<Planet::Node> Planet::InitialiseNode(const Face& face, size_t lodLevel, float width, const glm::vec3& centre)
-{
-  boost::shared_ptr<Node> node(new Node());
-  
-  node->lodLevel = lodLevel;
-  node->width = width;
-  node->centre = centre;
-
-  const glm::mat4 translate = glm::translate(centre);
-  const glm::mat4 scale = glm::scale((face.forward + face.right) * width);
-  node->transform = translate * scale;
-
-  const float halfWidth = width * 0.5f;
-  node->corners[Node::Corner::TL] = node->centre + glm::vec3(-halfWidth, 0.0, -halfWidth);
-  node->corners[Node::Corner::TR] = node->centre + glm::vec3( halfWidth, 0.0, -halfWidth);
-  node->corners[Node::Corner::BL] = node->centre + glm::vec3(-halfWidth, 0.0,  halfWidth);
-  node->corners[Node::Corner::BR] = node->centre + glm::vec3( halfWidth, 0.0,  halfWidth);
-
-  return node;
-}
-
-//---------------------------------------------------------------
-
-void Planet::Draw(SceneState& sceneState)
+void Terrain::Draw(SceneState& sceneState)
 {
   const glm::mat4 vp = sceneState.camera->projectionMatrix * sceneState.camera->viewMatrix;
 
   // Compute angle between camera and horizon (including a simple hack to account for mountain-tops
   // which might stick up above the horizon...
-  const float cameraHeight = glm::length(sceneState.camera->position);
-  horizonAngle = glm::acos(radius / cameraHeight) + ((cameraHeight > 1000.0) ? 20.0f : 5.0f);
+  const float cameraHeight = sceneState.camera->position.y;
+  horizonAngle = glm::acos(width / cameraHeight) + ((cameraHeight > 1000.0) ? 20.0f : 5.0f);
 
   const glm::vec3 normalisedCameraPos = glm::normalize(sceneState.camera->position);
 
-  for (size_t f = 0; f < faces.size(); ++f)
+  visibleNodes.clear();
+  GetVisibleNodes(sceneState.camera->position, normalisedCameraPos, &rootNode);
+
+  for (size_t i = 0; i < visibleNodes.size(); ++i)
   {
-    visibleNodes.clear();
-    for (size_t n = 0; n < 4; ++n)
-    {
-      GetVisibleNodes(sceneState.camera->position, normalisedCameraPos, faces[f].rootNodes[n], faces[f]);
-    }
+    const glm::mat4 world = visibleNodes[i]->transform;
+    const glm::mat4 wvp = vp * world;
+    effect.WorldViewProjectionMatrix->Set(wvp);
+    effect.Centre->Set(visibleNodes[i]->centre);
+    effect.Width->Set(visibleNodes[i]->width);
 
-    for (size_t i = 0; i < visibleNodes.size(); ++i)
-    {
-      const glm::mat4 world = faces[f].orientation * visibleNodes[i]->transform;
-      const glm::mat4 wvp = vp * world;
-      effect.WorldViewProjectionMatrix->Set(wvp);
-      effect.Centre->Set(visibleNodes[i]->centre);
-      effect.Width->Set(visibleNodes[i]->width);
-
-      sceneState.device->Draw(GL_TRIANGLE_STRIP, 0, indexCount, renderState);
-    }
+    sceneState.device->Draw(GL_TRIANGLE_STRIP, 0, indexCount, renderState);
   }
 }
 
 //---------------------------------------------------------------
-void Planet::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normalisedCameraPos, boost::shared_ptr<Node> node, const Face& face)
+void Terrain::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normalisedCameraPos, Node* const node)
 {
   // Ignore non-existent nodes...
   if (!node)
@@ -221,7 +140,7 @@ void Planet::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normal
   // Already at highest lod level? Just add it to the display list and return...
   if (node->lodLevel == maxLodLevel)
   {
-    visibleNodes.push_back(node.get());
+    visibleNodes.push_back(node);
     return;
   }
 
@@ -248,53 +167,74 @@ void Planet::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normal
   //  return;
   //}
 
-  //// Now ensure that the level of detail is high enough (within the pre-computed maximum).
-  //const float error = distance / node->width;
-  //if ((error < maxError) && (node->lodLevel < maxLodLevel))
-  //{
-  //  // Sub-divide the node if necessary and recurse into the child nodes to check them for visibility...
-  //  if (!node->children[0])
-  //  {
-  //    SplitNode(face, node);
-  //  }
-  //  for (size_t i = 0; i < 4; ++i)
-  //  {
-  //    GetVisibleNodes(cameraPos, normalisedCameraPos, node->children[i], face);
-  //  }
-  //}
-  //else
+  // Now ensure that the level of detail is high enough (within the pre-computed maximum).
+  const float error = distance / node->width;
+  if ((error < maxError) && (node->lodLevel < maxLodLevel))
+  {
+    // Sub-divide the node if necessary and recurse into the child nodes to check them for visibility...
+    if (!node->children[0])
+    {
+      SplitNode(node);
+    }
+    for (size_t i = 0; i < 4; ++i)
+    {
+      GetVisibleNodes(cameraPos, normalisedCameraPos, node->children[i].get());
+    }
+  }
+  else
   {
     // The node has enough detail to draw...
-    visibleNodes.push_back(node.get());
+    visibleNodes.push_back(node);
   }
 }
 
 //---------------------------------------------------------------
-void Planet::SplitNode(const Face& face, boost::shared_ptr<Node> parent)
+void Terrain::InitialiseRootNode()
 {
-  const float quarterWidth = parent->width * 0.25f;
-  for (size_t i = 0; i < 4; ++i)
+  rootNode.parent = NULL;
+  rootNode.lodLevel = 0;
+  rootNode.width = width;
+  rootNode.centre = glm::vec3(0);
+  rootNode.transform = glm::scale(width, 0.0f, width);
+
+  rootNode.corners[Node::Corner::TL] = glm::vec3(-rootNode.width * 0.5f, 0.0f, -rootNode.width * 0.5f);
+  rootNode.corners[Node::Corner::TR] = glm::vec3( rootNode.width * 0.5f, 0.0f, -rootNode.width * 0.5f);
+  rootNode.corners[Node::Corner::BL] = glm::vec3(-rootNode.width * 0.5f, 0.0f,  rootNode.width * 0.5f);
+  rootNode.corners[Node::Corner::BR] = glm::vec3( rootNode.width * 0.5f, 0.0f,  rootNode.width * 0.5f);
+}
+
+//---------------------------------------------------------------
+void Terrain::SplitNode(Node* const parent)
+{
+  if (parent->lodLevel < maxLodLevel)
   {
-    const float quarterWidth = radius * 0.25f;
-    glm::vec3 centre = face.up * 0.5f;
-    switch (i)
-    {
-    case Node::Corner::TL:
-      centre += (face.right * quarterWidth) + (face.forward * quarterWidth);
-      break;
-    case Node::Corner::TR:
-      centre += (face.right * quarterWidth) + (face.forward * quarterWidth);
-      break;
-    case Node::Corner::BL:
-      centre += (face.right * quarterWidth) - (face.forward * quarterWidth);
-      break;
-    case Node::Corner::BR:
-      centre += (face.right * quarterWidth) - (face.forward * quarterWidth);
-      break;
-    }
-    parent->children[i] = InitialiseNode(face, parent->lodLevel + 1, radius * 0.5f, centre);
-    parent->children[i]->parent = parent;
+    parent->children[Node::Corner::TL] = InitialiseNode(parent, glm::vec3(-1.0f, 0.0f, -1.0f));
+    parent->children[Node::Corner::TR] = InitialiseNode(parent, glm::vec3( 1.0f, 0.0f, -1.0f));
+    parent->children[Node::Corner::BL] = InitialiseNode(parent, glm::vec3(-1.0f, 0.0f,  1.0f));
+    parent->children[Node::Corner::BR] = InitialiseNode(parent, glm::vec3( 1.0f, 0.0f,  1.0f));
   }
+}
+
+//---------------------------------------------------------------
+boost::shared_ptr<Terrain::Node> Terrain::InitialiseNode(const Node* const parent, const glm::vec3& offset)
+{
+  boost::shared_ptr<Node> node(new Node());
+  
+  node->parent = parent;
+  node->lodLevel = parent->lodLevel + 1;
+  node->width = parent->width * 0.5f;
+  node->centre = parent->centre + (offset * node->width * 0.5f);
+
+  const glm::mat4 translate = glm::translate(node->centre);
+  const glm::mat4 scale = glm::scale(node->width, 0.0f, node->width);
+  node->transform = translate * scale;
+
+  node->corners[Node::Corner::TL] = node->centre + glm::vec3(-node->width * 0.5f, 0.0f, -node->width * 0.5f);
+  node->corners[Node::Corner::TR] = node->centre + glm::vec3( node->width * 0.5f, 0.0f, -node->width * 0.5f);
+  node->corners[Node::Corner::BL] = node->centre + glm::vec3(-node->width * 0.5f, 0.0f,  node->width * 0.5f);
+  node->corners[Node::Corner::BR] = node->centre + glm::vec3( node->width * 0.5f, 0.0f,  node->width * 0.5f);
+
+  return node;
 }
 
 //---------------------------------------------------------------
@@ -366,7 +306,7 @@ static void BuildGrid(int size, Vertex vertices[])
   {
     for (int x = 0; x < size; ++x)
     {
-      const glm::vec3 p = base + glm::vec3(x * increment, 0.0, z * increment);
+      const glm::vec3 p = base + glm::vec3(x * increment, 0.0f, -z * increment);
       vertices[x + (z * size)].position = p;
     }
   }
@@ -395,4 +335,28 @@ static void BuildIndices(int size, unsigned short indices[])
     }
     ++z;
   }
+}
+
+//---------------------------------------------------------------
+static void BuildGeometry(VertexArray& geometry)
+{
+  static const VertexAttribute attributes[] =
+  {
+    { VertexSemantic::PositionLow, GL_FLOAT, 3, offsetof(Vertex, position) }
+  };
+
+  VertexLayout vertexLayout;
+  vertexLayout.AddAttribute(attributes[0]);
+
+  Vertex vertices[vertexCount];
+  BuildGrid(gridSize, vertices);
+  boost::shared_ptr<VertexBuffer> vertexBuffer(new VertexBuffer());
+  vertexBuffer->Initialise(vertexLayout, vertexCount, GL_STATIC_DRAW, vertices);
+
+  unsigned short indices[indexCount];
+  BuildIndices(gridSize, indices);
+  boost::shared_ptr<IndexBuffer> indexBuffer(new IndexBuffer());
+  indexBuffer->Initialise(indexCount, GL_UNSIGNED_SHORT, GL_STATIC_DRAW, indices);
+
+  geometry.Initialise(vertexBuffer, indexBuffer);
 }

@@ -7,7 +7,7 @@
 #include <camera.h>
 #include <utils.h>
 #include <memory>
-#include <terrain/planet.h>
+#include <terrain/terrain.h>
 #include <scenestate.h>
 #include <boost/make_shared.hpp>
 
@@ -15,7 +15,7 @@
 
 struct Scene
 {
-  boost::shared_ptr<Planet> planet;
+  Terrain* terrain;
   SceneState sceneState;
 };
 
@@ -74,7 +74,7 @@ static void HandleInput(Camera* const camera)
 //-------------------------------------------------------------------
 static void DrawScene(Scene& scene)
 {
-  scene.planet->Draw(scene.sceneState);
+  scene.terrain->Draw(scene.sceneState);
 }
 
 //-------------------------------------------------------------------
@@ -95,18 +95,19 @@ int main(int argc, char* argv[])
   device.Initialise(1280, 720, "");
   scene.sceneState.device = &device;
 
-  static const float radius = 1000;
-  scene.planet = boost::make_shared<Planet>(radius);
-  if (!scene.planet->Initialise())
+  static const float width = 1000000;
+  Terrain terrain(width);
+  scene.terrain = &terrain;
+  if (!scene.terrain->Initialise())
   {
     return EXIT_FAILURE;
   }
 
   camera.Initialise(device.BackbufferWidth, device.BackbufferHeight);
-  camera.position = glm::dvec3(0, 0, 6000);
-  camera.farClip = 10000;
-  camera.nearClip = 10;
-  camera.speed = 100;
+  camera.position = glm::dvec3(0, width, 0);
+  camera.farClip = 10000000;
+  camera.nearClip = 0.1f;
+  camera.speed = 10000;
   scene.sceneState.camera = &camera;
 
   // Constants controlling depth precision (smaller increases precision at distance at the
@@ -117,9 +118,9 @@ int main(int argc, char* argv[])
   static const float logDepthDivisor = (float)(1.0 / (glm::log(logDepthConstant * camera.farClip) + logDepthOffset));
   // The camera's far plane distance never changes so these values (used in logarithmic
   // depth buffer) can be set just once.
-  scene.planet->effect.LogDepthConstant->Set(logDepthConstant);
-  scene.planet->effect.LogDepthOffset->Set(logDepthOffset);
-  scene.planet->effect.LogDepthDivisor->Set(logDepthDivisor);
+  scene.terrain->effect.LogDepthConstant->Set(logDepthConstant);
+  scene.terrain->effect.LogDepthOffset->Set(logDepthOffset);
+  scene.terrain->effect.LogDepthDivisor->Set(logDepthDivisor);
   
   SceneState sceneState;
   sceneState.camera = &camera;

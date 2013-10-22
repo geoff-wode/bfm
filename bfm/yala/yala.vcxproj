@@ -17,7 +17,7 @@
     <ClCompile Include="src\effectuniform.cpp" />
     <ClCompile Include="src\indexbuffer.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\terrain\planet.cpp" />
+    <ClCompile Include="src\terrain\terrain.cpp" />
     <ClCompile Include="src\texture2d.cpp" />
     <ClCompile Include="src\uniformbuffer.cpp" />
     <ClCompile Include="src\utils.cpp" />
@@ -40,7 +40,7 @@
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\terrain\terraineffect.h" />
     <ClInclude Include="include\scenestate.h" />
-    <ClInclude Include="include\terrain\planet.h" />
+    <ClInclude Include="include\terrain\terrain.h" />
     <ClInclude Include="include\terrain\vertex.h" />
     <ClInclude Include="include\texture2d.h" />
     <ClInclude Include="include\uniformbuffer.h" />

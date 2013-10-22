@@ -56,7 +56,6 @@ shader VS
     out VSOut vsOut
   )
 {
-  //const vec3 p = Radius * normalize((Width * Position)) + Centre);
   vsOut.clippedPos = WorldViewProjectionMatrix * vec4(Position, 1.0);
 
   gl_Position = vsOut.clippedPos;
@@ -71,6 +70,7 @@ shader FS
   )
 {
   colour = vec4(0,1,0,1);
+
   gl_FragDepth = ComputeDepth(vsIn.clippedPos.z);
 }
 
