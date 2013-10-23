@@ -12,9 +12,9 @@ public:
   void Update(float elapsedMS);
 
   // Used to determine the view frustum width at a real-world distance D:
-  //    w = 2 * D * tan(fovAngle / 2)
-  // where fovAngle is the field-of-view angle and D is the distance to a point.
-  float twoTimestanFOVover2;
+  //    w = 2 * D * tan(fov / 2)
+  // where fov is the field-of-view angle and D is the distance to a point.
+  float twoTanThetaover2;
 
   size_t displayResolutionX;
 
@@ -28,6 +28,7 @@ public:
   float speed;
   glm::vec3 movement;
   glm::vec3 position;
+  glm::vec3 normalisedPosition;
   glm::vec3 up;
   glm::vec3 forward;
   glm::vec3 right;

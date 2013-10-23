@@ -14,7 +14,7 @@
 class Terrain
 {
 public:
-  Terrain(float width);
+  Terrain(float width, const glm::vec2& heightRange);
   ~Terrain();
 
   bool Initialise();
@@ -26,6 +26,7 @@ public:
   TerrainEffect effect;
 
   const float width;
+  const glm::vec2 heightRange;
 
 private:
   // Maximum quad tree depth at the highest level of detail.
@@ -34,34 +35,31 @@ private:
   RenderState renderState;
   VertexArray geometry;
 
-  // Constant to control when patches should be split to create finer levels of detail.
-  static const float maxError;
-
   // The angle at which the horizon curves away, as seen by the camera.
   float horizonAngle;
 
   struct Node
   {
-    struct Corner { enum Enum { TL, TR, BL, BR }; };
-    Node const* parent;
-    float width;
-    size_t lodLevel;
-    glm::vec3 centre;
-    glm::mat4 transform;  // combined scale & translate
+    Node(float width, size_t startLoDLevel);
+    Node(const Node* const parent, size_t corner);
+
+    void Split();
+    void Merge();
+
+    const Node* const parent;
+    const float width;          // world-space unit width of the node
+    const size_t lodLevel;
+    const float unitWidth;      // width of a single grid square in world units
+    const glm::vec3 centre;     // world-space centre of the node
+    const glm::mat4 transform;  // places the node at the correct position and scale in world units
     glm::vec3 corners[4];
     boost::shared_ptr<Node> children[4];
   };
 
-  Node rootNode;
+  boost::shared_ptr<Node> rootNode;
   std::vector<Node* const> visibleNodes;
 
-  void InitialiseRootNode();
-
-  boost::shared_ptr<Node> InitialiseNode(const Node* const parent, const glm::vec3& offset);
-
-  void GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normalisedCameraPos, Node * const node);
-
-  void SplitNode(Node* const parent);
+  void GetVisibleNodes(const SceneState& sceneState, Node* const node);
 };
 
 #endif // __TERRAIN__

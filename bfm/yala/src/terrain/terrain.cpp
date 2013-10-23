@@ -25,30 +25,32 @@
 #include <logging.h>
 #include <terrain/terrain.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 //---------------------------------------------------------------
 
 struct Vertex
 {
-  glm::vec3 position;
+  glm::vec2 position;
+};
+
+// Multipliers to use in order to offset a position, etc. into the correct quadrant.
+// The quadrants are ordered anticlockwise, starting at the "northwest" as viewed from
+// directly above the centre of the plane.
+static const glm::vec3 quadrantOffsets[] =
+{
+  glm::vec3(-1, 0, -1),
+  glm::vec3(-1, 0,  1),
+  glm::vec3( 1, 0,  1),
+  glm::vec3( 1, 0, -1)
 };
 
 //---------------------------------------------------------------
 
 // Constants defining the basic grid geometry...
-static const size_t gridSize = 33;
+static const size_t gridSize = 17;
 static const size_t vertexCount = gridSize * gridSize;
 static const size_t indexCount = 2 * gridSize * (gridSize - 1);
-
-// Global axes:
-static const glm::vec4 Up(0, 1, 0,0);
-static const glm::vec4 Down(0, -1, 0,0);
-static const glm::vec4 Forward(0, 0, -1,0);
-static const glm::vec4 Backward(0, 0, 1,0);
-static const glm::vec4 Left(-1, 0, 0,0);
-static const glm::vec4 Right(1, 0, 0,0);
-
-const float Terrain::maxError = 4;
 
 //---------------------------------------------------------------
 
@@ -58,8 +60,68 @@ static void BuildIndices(int size, unsigned short indices[]);
 
 //---------------------------------------------------------------
 
-Terrain::Terrain(float width)
-  : width(width)
+Terrain::Node::Node(float width, size_t startLoDLevel)
+  : parent(NULL),
+    width(width),
+    lodLevel(startLoDLevel),
+    unitWidth(width / (float)(gridSize - 1)),
+    centre(0),
+    transform(glm::scale(width, width, width))
+{
+  for (size_t q = 0; q < 4; ++q)
+  {
+    corners[q] = quadrantOffsets[q] * width * 0.5f;
+  }
+}
+
+Terrain::Node::Node(const Node* const parent, size_t corner)
+  : parent(parent),
+    width(parent->width * 0.5f),
+    lodLevel(parent->lodLevel - 1),
+    unitWidth(width / (float)(gridSize - 1)),
+    centre(parent->centre + (quadrantOffsets[corner] * width * 0.5f)),
+    transform(glm::translate(centre) * glm::scale(width, width, width))
+{
+  for (size_t q = 0; q < 4; ++q)
+  {
+    corners[q] = centre + (quadrantOffsets[q] * width * 0.5f);
+  }
+}
+
+void Terrain::Node::Split()
+{
+  // Don't go past maximum LOD level and don't duplicate child nodes...
+  if ((lodLevel > 0) && (!children[0]))
+  {
+    for (size_t q = 0; q < 4; ++q)
+    {
+      children[q] = boost::make_shared<Node>(this, q);
+    }
+  }
+}
+
+void Terrain::Node::Merge()
+{
+  // Can't merge if already at root of quadtree...
+  if (parent)
+  {
+    // If one child exists, then they all do...
+    if (children[0])
+    {
+      for (size_t q = 0; q < 4; ++q)
+      {
+        children[q]->Merge();
+        children[q].reset();
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------
+
+Terrain::Terrain(float width, const glm::vec2& heightRange)
+  : width(width),
+    heightRange(heightRange)
 {
 }
 
@@ -70,11 +132,6 @@ Terrain::~Terrain()
 //---------------------------------------------------------------
 bool Terrain::Initialise()
 {
-  if (!effect.Load("effects\\terrain.glsl", "Terrain")) { return false; }
-
-  InitialiseRootNode();
-  BuildGeometry(geometry);
-
   // I can't remember the web site that gave the formula (!) for this but basically
   // it boils down to working out how many times the width of the largest patch
   // (in world units) must be halved to end up with a patch that represents
@@ -85,10 +142,17 @@ bool Terrain::Initialise()
   // width of 33 vertices, there will be 13 levels of detail (zero is the top, least detailed
   // level).
   const float log2Width = glm::log(width, 2.0f);
-  const float log2Grid = glm::log(2 * (float)gridSize * (float)gridSize, 2.0f);
-  maxLodLevel = glm::max(1U, (size_t)(log2Width - log2Grid));
+  const float log2Grid = glm::log(2.0f * gridSize * gridSize, 2.0f);
+  maxLodLevel = size_t(glm::max(1U, (size_t)(log2Width - log2Grid)));
+  
+  if (!effect.Load("effects\\terrain.glsl", "Terrain")) { return false; }
+  effect.MaxHeight->Set(abs(heightRange.x + heightRange.y));
 
-  // Initialise constant render state...
+  rootNode = boost::make_shared<Node>(width, maxLodLevel);
+
+  BuildGeometry(geometry);
+
+ // Initialise constant render state...
   renderState.effect = &effect;
   renderState.vertexArray = &geometry;
   renderState.drawState.polygonMode = GL_LINE;
@@ -104,32 +168,31 @@ bool Terrain::Initialise()
 
 void Terrain::Draw(SceneState& sceneState)
 {
-  const glm::mat4 vp = sceneState.camera->projectionMatrix * sceneState.camera->viewMatrix;
+  effect.CameraPosition->Set(sceneState.camera->position);
+  effect.ViewMatrix->Set(sceneState.camera->viewMatrix);
+  effect.ProjectionMatrix->Set(sceneState.camera->projectionMatrix);
+  effect.ViewProjectionMatrix->Set(sceneState.camera->viewProjectionMatrix);
 
-  // Compute angle between camera and horizon (including a simple hack to account for mountain-tops
-  // which might stick up above the horizon...
-  const float cameraHeight = sceneState.camera->position.y;
-  horizonAngle = glm::acos(width / cameraHeight) + ((cameraHeight > 1000.0) ? 20.0f : 5.0f);
+  //// Compute angle between camera and horizon (including a simple hack to account for mountain-tops
+  //// which might stick up above the horizon...
+  //const float cameraHeight = sceneState.camera->position.y;
+  //horizonAngle = glm::acos(width / cameraHeight) + ((cameraHeight > 1000.0) ? 20.0f : 5.0f);
 
   const glm::vec3 normalisedCameraPos = glm::normalize(sceneState.camera->position);
 
   visibleNodes.clear();
-  GetVisibleNodes(sceneState.camera->position, normalisedCameraPos, &rootNode);
+  GetVisibleNodes(sceneState, rootNode.get());
 
   for (size_t i = 0; i < visibleNodes.size(); ++i)
   {
-    const glm::mat4 world = visibleNodes[i]->transform;
-    const glm::mat4 wvp = vp * world;
-    effect.WorldViewProjectionMatrix->Set(wvp);
-    effect.Centre->Set(visibleNodes[i]->centre);
-    effect.Width->Set(visibleNodes[i]->width);
+    effect.WorldMatrix->Set(visibleNodes[i]->transform);
 
     sceneState.device->Draw(GL_TRIANGLE_STRIP, 0, indexCount, renderState);
   }
 }
 
 //---------------------------------------------------------------
-void Terrain::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& normalisedCameraPos, Node* const node)
+void Terrain::GetVisibleNodes(const SceneState& sceneState, Node* const node)
 {
   // Ignore non-existent nodes...
   if (!node)
@@ -138,103 +201,70 @@ void Terrain::GetVisibleNodes(const glm::vec3& cameraPos, const glm::vec3& norma
   }
 
   // Already at highest lod level? Just add it to the display list and return...
-  if (node->lodLevel == maxLodLevel)
+  if (node->lodLevel == 0)
   {
     visibleNodes.push_back(node);
     return;
   }
 
-  // Find the distance to and surface angle of the nearest corner of the node...
-  float distance = FLT_MAX;
-  size_t nearestCorner = 0;
+  // Find out whether the node's centre or one of it's corners is closest to the camera...
+  //glm::vec3 transformedPoint = glm::vec3(node->transform * glm::vec4(node->centre, 1));
+  float distance = glm::distance(sceneState.camera->position, node->centre);
+  glm::vec3 normalisedClosestPoint = glm::normalize(node->centre);
   for (size_t i = 0; i < 4; ++i)
   {
-    const float distanceToCorner = glm::distance(cameraPos, node->corners[i]);
+    //transformedPoint = glm::vec3(node->transform * glm::vec4(node->corners[i], 1));
+    const float distanceToCorner = glm::distance(sceneState.camera->position, node->corners[i]);
     if (distanceToCorner < distance)
     {
-      nearestCorner = i;
       distance = distanceToCorner;
+      normalisedClosestPoint = glm::normalize(node->corners[i]);
     }
   }
 
   // Get the angle between the camera and the closest point and compare it to the angle
   // of the horizon. If greater, then this node is "below" the horizon and not visible...
-  //const glm::vec3 norm = glm::normalize(node->corners[nearestCorner]);
-  //const float dot = glm::dot(normalisedCameraPos, norm);
+  //const float dot = glm::dot(normalisedCameraPos, normalisedClosestPoint);
   //const float angle = glm::acos(dot);
   //if (angle >= horizonAngle)
   //{
   //  return;
   //}
 
-  // Now ensure that the level of detail is high enough (within the pre-computed maximum).
-  const float error = distance / node->width;
-  if ((error < maxError) && (node->lodLevel < maxLodLevel))
+  // Taking the centre of the node and using half it's unitWidth as the radius of a sphere,
+  // compute
+  // 
+  //            epsilon * x
+  // rho = -----------------------
+  //       2 * d * tan(thetaOver2)
+  //
+  // where,
+  // 'rho' is the screen-space error
+  // 'epsilon' is the maximum allowable error metric
+  // 'x' is the horizontal resolution of the display
+  // 'd' is the distance to the sphere surrounding the grid square
+  // 'thetaOver2' is half the camera's field of view angle
+  //
+  // We use the node's closest point as the centre of the sphere.
+  static const float epsilon = 1.0f;
+  static const float maxError = 0.1f;
+  const float rho = (epsilon * sceneState.camera->displayResolutionX) / (distance * sceneState.camera->twoTanThetaover2);
+
+  if (rho >= maxError)
   {
     // Sub-divide the node if necessary and recurse into the child nodes to check them for visibility...
-    if (!node->children[0])
-    {
-      SplitNode(node);
-    }
+    node->Split();
     for (size_t i = 0; i < 4; ++i)
     {
-      GetVisibleNodes(cameraPos, normalisedCameraPos, node->children[i].get());
+      GetVisibleNodes(sceneState, node->children[i].get());
     }
   }
   else
   {
     // The node has enough detail to draw...
+    //node->Merge();
     visibleNodes.push_back(node);
   }
-}
-
-//---------------------------------------------------------------
-void Terrain::InitialiseRootNode()
-{
-  rootNode.parent = NULL;
-  rootNode.lodLevel = 0;
-  rootNode.width = width;
-  rootNode.centre = glm::vec3(0);
-  rootNode.transform = glm::scale(width, 0.0f, width);
-
-  rootNode.corners[Node::Corner::TL] = glm::vec3(-rootNode.width * 0.5f, 0.0f, -rootNode.width * 0.5f);
-  rootNode.corners[Node::Corner::TR] = glm::vec3( rootNode.width * 0.5f, 0.0f, -rootNode.width * 0.5f);
-  rootNode.corners[Node::Corner::BL] = glm::vec3(-rootNode.width * 0.5f, 0.0f,  rootNode.width * 0.5f);
-  rootNode.corners[Node::Corner::BR] = glm::vec3( rootNode.width * 0.5f, 0.0f,  rootNode.width * 0.5f);
-}
-
-//---------------------------------------------------------------
-void Terrain::SplitNode(Node* const parent)
-{
-  if (parent->lodLevel < maxLodLevel)
-  {
-    parent->children[Node::Corner::TL] = InitialiseNode(parent, glm::vec3(-1.0f, 0.0f, -1.0f));
-    parent->children[Node::Corner::TR] = InitialiseNode(parent, glm::vec3( 1.0f, 0.0f, -1.0f));
-    parent->children[Node::Corner::BL] = InitialiseNode(parent, glm::vec3(-1.0f, 0.0f,  1.0f));
-    parent->children[Node::Corner::BR] = InitialiseNode(parent, glm::vec3( 1.0f, 0.0f,  1.0f));
-  }
-}
-
-//---------------------------------------------------------------
-boost::shared_ptr<Terrain::Node> Terrain::InitialiseNode(const Node* const parent, const glm::vec3& offset)
-{
-  boost::shared_ptr<Node> node(new Node());
-  
-  node->parent = parent;
-  node->lodLevel = parent->lodLevel + 1;
-  node->width = parent->width * 0.5f;
-  node->centre = parent->centre + (offset * node->width * 0.5f);
-
-  const glm::mat4 translate = glm::translate(node->centre);
-  const glm::mat4 scale = glm::scale(node->width, 0.0f, node->width);
-  node->transform = translate * scale;
-
-  node->corners[Node::Corner::TL] = node->centre + glm::vec3(-node->width * 0.5f, 0.0f, -node->width * 0.5f);
-  node->corners[Node::Corner::TR] = node->centre + glm::vec3( node->width * 0.5f, 0.0f, -node->width * 0.5f);
-  node->corners[Node::Corner::BL] = node->centre + glm::vec3(-node->width * 0.5f, 0.0f,  node->width * 0.5f);
-  node->corners[Node::Corner::BR] = node->centre + glm::vec3( node->width * 0.5f, 0.0f,  node->width * 0.5f);
-
-  return node;
 }
 
 //---------------------------------------------------------------
@@ -301,12 +331,11 @@ static float ComputeHeight(glm::vec3 p, float octaves, float roughness, float la
 static void BuildGrid(int size, Vertex vertices[])
 {
   const float increment = 1.0f / (float)(size - 1);
-  const glm::vec3 base = glm::vec3(-0.5f, 0.0f, 0.5f);
   for (int z = 0; z < size; ++z)
   {
     for (int x = 0; x < size; ++x)
     {
-      const glm::vec3 p = base + glm::vec3(x * increment, 0.0f, -z * increment);
+      const glm::vec2 p = glm::vec2(-0.5f + (x * increment), 0.5f - (z * increment));
       vertices[x + (z * size)].position = p;
     }
   }
@@ -342,7 +371,7 @@ static void BuildGeometry(VertexArray& geometry)
 {
   static const VertexAttribute attributes[] =
   {
-    { VertexSemantic::PositionLow, GL_FLOAT, 3, offsetof(Vertex, position) }
+    { VertexSemantic::Position, GL_FLOAT, 2, offsetof(Vertex, position) }
   };
 
   VertexLayout vertexLayout;

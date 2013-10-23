@@ -23,7 +23,7 @@ static const SDLAttribute sdlAttributes[] =
   SDL_ATTR(SDL_GL_STENCIL_SIZE,       8 ),
   SDL_ATTR(SDL_GL_BUFFER_SIZE,        24),
   SDL_ATTR(SDL_GL_MULTISAMPLEBUFFERS, 1 ),
-  SDL_ATTR(SDL_GL_MULTISAMPLESAMPLES, 2 )
+  SDL_ATTR(SDL_GL_MULTISAMPLESAMPLES, 4 )
 };
 const int NumSDLAttributes = sizeof(sdlAttributes)/sizeof(sdlAttributes[0]);
 
@@ -173,6 +173,7 @@ void Device::ApplyRenderState(const RenderState& state)
   ApplyVertexArray(state.vertexArray);
   ApplyTextureUnits(state.textureUnits);
   ApplyPolygonMode(state.drawState.polygonMode);
+  ApplyBlendingState(state.drawState.blending);
 }
 //-----------------------------------------------------------
 void Device::ApplyColourMask(const glm::bvec4& mask)
@@ -293,6 +294,28 @@ void Device::ApplyPolygonMode(GLenum mode)
   }
 }
 //-----------------------------------------------------------
+void Device::ApplyBlendingState(const Blending& state)
+{
+  if (state.enabled != renderState.drawState.blending.enabled)
+  {
+    state.enabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+    renderState.drawState.blending.enabled = state.enabled;
+  }
+  if (
+    (state.rgb.source != renderState.drawState.blending.rgb.source) ||
+    (state.rgb.destination != renderState.drawState.blending.rgb.destination) ||
+    (state.alpha.source != renderState.drawState.blending.alpha.source) ||
+    (state.alpha.destination != renderState.drawState.blending.alpha.destination)
+    )
+  {
+    glBlendFuncSeparate(
+      state.rgb.source, state.rgb.destination,
+      state.alpha.source, state.alpha.destination);
+    renderState.drawState.blending.rgb = state.rgb;
+    renderState.drawState.blending.alpha = state.alpha;
+  }
+}
+//-----------------------------------------------------------
 static void ConfigureOpenGL(const ClearState& clearState, const DrawState& drawState)
 {
   glInitLibrary();
@@ -319,4 +342,9 @@ static void ConfigureOpenGL(const ClearState& clearState, const DrawState& drawS
   drawState.depthTest.enabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 
   glPolygonMode(GL_FRONT_AND_BACK, drawState.polygonMode);
+
+  drawState.blending.enabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+  glBlendFuncSeparate(
+    drawState.blending.rgb.source, drawState.blending.rgb.destination,
+    drawState.blending.alpha.source, drawState.blending.alpha.destination);
 }

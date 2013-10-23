@@ -4,6 +4,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4A01883F-5888-4514-80BC-D40B04669B0C}"
 	ProjectSection(SolutionItems) = preProject
 		copy-exclusions.dat = copy-exclusions.dat
+		readme.txt = readme.txt
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gl_loader", "gl_loader\gl_loader.vcxproj", "{851A4402-C191-4CBD-8288-E6882C56C565}"

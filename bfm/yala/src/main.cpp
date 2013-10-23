@@ -65,10 +65,13 @@ static void HandleInput(Camera* const camera)
     camera->pitch -= (mouseSensitivity.y * (float)mousePos.y);
   }
 
+  if (keyState[SDL_SCANCODE_Z]) { camera->movement.y -= 1; }
+  if (keyState[SDL_SCANCODE_X]) { camera->movement.y += 1; }
+
   if (keyState[SDL_SCANCODE_W]) { camera->movement.z -= 1; }
   if (keyState[SDL_SCANCODE_S]) { camera->movement.z += 1; }
-  if (keyState[SDL_SCANCODE_A]) { camera->yaw -= 0.0001f; }
-  if (keyState[SDL_SCANCODE_D]) { camera->yaw += 0.0001f; }
+  if (keyState[SDL_SCANCODE_A]) { camera->yaw -= 0.01f; }
+  if (keyState[SDL_SCANCODE_D]) { camera->yaw += 0.01f; }
 }
 
 //-------------------------------------------------------------------
@@ -95,19 +98,22 @@ int main(int argc, char* argv[])
   device.Initialise(1280, 720, "");
   scene.sceneState.device = &device;
 
-  static const float width = 1000000;
-  Terrain terrain(width);
-  scene.terrain = &terrain;
-  if (!scene.terrain->Initialise())
+  static const float width = 10000;
+  // Compute height range from 20 metres below sea-level to a maximum of some
+  // fraction of the width.
+  Terrain terrain(width, glm::vec2(-20, 10000));
+  if (!terrain.Initialise())
   {
     return EXIT_FAILURE;
   }
 
+  scene.terrain = &terrain;
+
   camera.Initialise(device.BackbufferWidth, device.BackbufferHeight);
-  camera.position = glm::dvec3(0, width, 0);
+  camera.position = glm::vec3(0, 1000, 0);
   camera.farClip = 10000000;
   camera.nearClip = 0.1f;
-  camera.speed = 10000;
+  camera.speed = 500.0f;
   scene.sceneState.camera = &camera;
 
   // Constants controlling depth precision (smaller increases precision at distance at the

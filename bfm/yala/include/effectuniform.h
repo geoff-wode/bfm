@@ -15,14 +15,21 @@ public:
   }
 
   void Set(float value);
+  void Set(double value);
   void Set(int value);
   void Set(unsigned int value);
   void Set(const glm::vec2& value);
   void Set(const glm::vec3& value);
   void Set(const glm::vec4& value);
+  void Set(const glm::dvec2& value);
+  void Set(const glm::dvec3& value);
+  void Set(const glm::dvec4& value);
   void Set(const glm::mat2& value);
   void Set(const glm::mat3& value);
   void Set(const glm::mat4& value);
+  void Set(const glm::dmat2& value);
+  void Set(const glm::dmat3& value);
+  void Set(const glm::dmat4& value);
 
 private:
   GLint location;

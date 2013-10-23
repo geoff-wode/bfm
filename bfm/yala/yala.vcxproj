@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\basiceffect.glsl" />
-    <None Include="effects\dp-terrain.glsl" />
+    <None Include="effects\common.glsl" />
     <None Include="effects\terrain.glsl" />
   </ItemGroup>
   <ItemGroup>

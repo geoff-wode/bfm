@@ -12,18 +12,17 @@ public:
   TerrainEffect() { }
   virtual ~TerrainEffect() { }
 
-  EffectUniform* CameraPosition;
-  EffectUniform* Radius;
-  EffectUniform* Centre;
-  EffectUniform* Width;
+  EffectUniform* MaxHeight;
+  EffectUniform* TileWidth;
+  EffectUniform* TileCentre;
 
 private:
   virtual void Initialise()
   {
-    CameraPosition = &parameters["CameraPosition"];
-    Radius = &parameters["Radius"];
-    Centre = &parameters["Centre"];
-    Width = &parameters["Width"];
+    MaxHeight = &parameters["MaxHeight"];
+    TileWidth = &parameters["TileWidth"];
+    TileCentre = &parameters["TileCentre"];
+
     Effect::Initialise();
   }
 };

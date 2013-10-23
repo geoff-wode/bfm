@@ -24,25 +24,13 @@ public:
   // Called automatically by Device::Draw to ensure the GPU remains sync'd with the CPU.
   void Appply();
 
-  // The world-view-projection matrix.
-  // This must be computed by creating a model-view matrix and setting its translation
-  // vector to (0,0,0) _before_ the projection matrix is applied. E.g.
-  //
-  //    glm::dmat4 modelViewMatrix = cameraviewMatrix * worldTransform;
-  //    modelViewMatrix[3][0] = 0.0;
-  //    modelViewMatrix[3][1] = 0.0;
-  //    modelViewMatrix[3][2] = 0.0;
-  //    glm::mat4 rteWVP = glm::mat4(context.camera->projectionMatrix * modelViewMatrix));
-  //
-  // Also note that the final rteWVP matrix must be cast to single-precision before passing
-  // it to the effect.
+  EffectUniform* WorldMatrix;
+  EffectUniform* ViewMatrix;
+  EffectUniform* ProjectionMatrix;
+  EffectUniform* ViewProjectionMatrix;
   EffectUniform* WorldViewProjectionMatrix;
 
-  // In order to use relative-to-eye rendering, the camera's world-space position
-  // must be passed in as a double-precision value (encoded into these 2 single-
-  // precision uniforms).
-  EffectUniform* CameraPositionLow;
-  EffectUniform* CameraPositionHigh;
+  EffectUniform* CameraPosition;
 
   // Values to configure the computation of logarithmic rather than linear depth.
   // See http://www.gamedev.net/blog/73/entry-2006307-tip-of-the-day-logarithmic-zbuffer-artifacts-fix

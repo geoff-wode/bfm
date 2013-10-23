@@ -1,50 +1,33 @@
-#define SHADER_SEMANTIC_POSITION      0
-#define SHADER_SEMANTIC_NORMAL        2
-#define SHADER_SEMANTIC_TEXCOORD      3
+#include "common.glsl"
 
-// World space camera position.
-uniform vec3 CameraPosition;
+//---------------------------------------------------------
 
-// World-View-Projection transform.
-uniform mat4 WorldViewProjectionMatrix;
-
-// Per-frame constants controlling the computation of logarithmic depth.
-uniform float LogDepthConstant;
-uniform float LogDepthOffset;
-uniform float LogDepthDivisor;
-
-uniform vec3 Centre;
-uniform float Radius;
-uniform float Width;
+uniform float MaxHeight = 1000.0f;
 
 //---------------------------------------------------------
 
 struct VSOut
 {
-  vec4 clippedPos;  // The fully transformed clip-space position.
+  vec4 clip;
 };
 
 //---------------------------------------------------------
-// Compute logarithmic depth instead of the default gl_FragCoord.z emitted by GL.
-// See http://www.gamedev.net/blog/73/entry-2006307-tip-of-the-day-logarithmic-zbuffer-artifacts-fix
-// but basically:
-//
-//          | log((C * zClip) + offset) |
-//  depth = | ------------------------- |
-//          |  log((C * far) + offset)  |
-//
-// where,
-// - C is a constant controlling depth precision (smaller increases precision at
-//    distance at the expense of loosing precision close-in.
-// - zClip is the clip-space (ie. post-projection transform) z coordinate
-// - offset controls how close the near clip plane can be to the camera (bigger == less near clipping)
-//    (e.g. 2.0 gives a clip plane of a few centimeters)
-// - far is the distance from the camera to the far clip plane (in world units).
-// Since the divisor is constant for a whole render frame, "1/log((C * far) + near)" is
-// precomputed on the CPU.
-float ComputeDepth(float Zclip)
+
+float fBm(vec2 point, float maxRoughness, float lacunarity, float octaves)
 {
-  return log((LogDepthConstant * Zclip) + LogDepthOffset) * LogDepthDivisor;
+  float value = 0;
+  int i;
+  for (i = 0; i < int(octaves); ++i)
+  {
+    value += noise1(point) * pow(lacunarity, -maxRoughness * i);
+    point *= lacunarity;
+  }
+  float remainder = octaves - int(octaves);
+  if (remainder > 0)
+  {
+    value += remainder * noise1(point) * pow(lacunarity, -maxRoughness * i);
+  }
+  return value;
 }
 
 //---------------------------------------------------------
@@ -52,13 +35,19 @@ float ComputeDepth(float Zclip)
 // Vertex shader: computes clip-space position and forwards model-space coordinate to fragment shader.
 shader VS
   (
-    in vec3 Position : SHADER_SEMANTIC_POSITION,
+    in vec2 Position : SHADER_SEMANTIC_POSITION,
     out VSOut vsOut
   )
 {
-  vsOut.clippedPos = WorldViewProjectionMatrix * vec4(Position, 1.0);
+  vec4 P = WorldMatrix * vec4(Position.x, 0.0f, Position.y, 1.0f);
+  float height = MaxHeight * fBm(P.xz, 0.8f, 0.516273f, 6.3f);
+  vec4 worldPos = vec4(P.x, height, P.z, 1.0f);
+  gl_Position = ViewProjectionMatrix * worldPos;
 
-  gl_Position = vsOut.clippedPos;
+  // Transform the vertex to clip space and output that to the fragment shader
+  // so that it can compute depth logarithmically rather than using the built-in
+  // fragment depth calculation.
+  vsOut.clip = gl_Position;
 }
 
 //---------------------------------------------------------
@@ -69,9 +58,9 @@ shader FS
     out vec4 colour
   )
 {
-  colour = vec4(0,1,0,1);
+  colour = vec4(1,1,1,1);
 
-  gl_FragDepth = ComputeDepth(vsIn.clippedPos.z);
+  gl_FragDepth = ComputeDepth(vsIn.clip.z);
 }
 
 //---------------------------------------------------------

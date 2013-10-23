@@ -45,6 +45,7 @@ struct Culling
   GLenum windingOrder;
 };
 
+//----------------------------------------------------------
 struct DepthTest
 {
   DepthTest()
@@ -57,6 +58,32 @@ struct DepthTest
   GLenum function;
 };
 
+//----------------------------------------------------------
+struct Blending
+{
+  struct Factors
+  {
+    Factors()
+      : source(GL_ONE),
+        destination(GL_ZERO)
+    {
+    }
+
+    GLenum source;
+    GLenum destination;
+  };
+
+  Blending()
+    : enabled(false)
+  {
+  }
+
+  bool enabled;
+  Factors rgb;    // specifies how the source and destination RGB channels are blended
+  Factors alpha;  // specifies how the source and destination alpha channels are blended
+};
+
+//----------------------------------------------------------
 struct DrawState
 {
   DrawState()
@@ -73,6 +100,7 @@ struct DrawState
 
   Culling culling;
   DepthTest depthTest;
+  Blending blending;
 };
 
 //----------------------------------------------------------
@@ -132,6 +160,7 @@ private:
   void ApplyEffect(Effect* effect);
   void ApplyVertexArray(VertexArray* vertexArray);
   void ApplyPolygonMode(GLenum mode);
+  void ApplyBlendingState(const Blending& state);
 };
 
 #endif // __DEVICE__

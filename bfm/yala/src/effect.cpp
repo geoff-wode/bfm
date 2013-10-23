@@ -42,9 +42,18 @@ void Effect::Appply()
       case GL_FLOAT_VEC3:   glUniform3fv(param.second.location, 1, (float*)param.second.cache); break;
       case GL_FLOAT_VEC4:   glUniform4fv(param.second.location, 1, (float*)param.second.cache); break;
 
+      case GL_DOUBLE:       glUniform1dv(param.second.location, 1, param.second.cache); break;
+      case GL_DOUBLE_VEC2:  glUniform2dv(param.second.location, 1, param.second.cache); break;
+      case GL_DOUBLE_VEC3:  glUniform3dv(param.second.location, 1, param.second.cache); break;
+      case GL_DOUBLE_VEC4:  glUniform4dv(param.second.location, 1, param.second.cache); break;
+
       case GL_FLOAT_MAT2:   glUniformMatrix2fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
       case GL_FLOAT_MAT3:   glUniformMatrix3fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
       case GL_FLOAT_MAT4:   glUniformMatrix4fv(param.second.location, 1, GL_FALSE, (float*)param.second.cache); break;
+
+      case GL_DOUBLE_MAT2:  glUniformMatrix2dv(param.second.location, 1, GL_FALSE, param.second.cache); break;
+      case GL_DOUBLE_MAT3:  glUniformMatrix3dv(param.second.location, 1, GL_FALSE, param.second.cache); break;
+      case GL_DOUBLE_MAT4:  glUniformMatrix4dv(param.second.location, 1, GL_FALSE, param.second.cache); break;
 
       case GL_SAMPLER_1D:   glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
       case GL_SAMPLER_2D:   glUniform1iv(param.second.location, 1, (int*)param.second.cache); break;
@@ -60,9 +69,12 @@ void Effect::Appply()
 //--------------------------------------------------------------
 void Effect::Initialise()
 {
+  WorldMatrix = &parameters["WorldMatrix"];
+  ViewMatrix = &parameters["ViewMatrix"];
+  ProjectionMatrix = &parameters["ProjectionMatrix"];
+  ViewProjectionMatrix = &parameters["ViewProjectionMatrix"];
   WorldViewProjectionMatrix = &parameters["WorldViewProjectionMatrix"];
-  CameraPositionLow = &parameters["CameraPosition.Low"];
-  CameraPositionHigh = &parameters["CameraPosition.High"];
+  CameraPosition = &parameters["CameraPosition"];
   LogDepthDivisor = &parameters["LogDepthDivisor"];
   LogDepthConstant = &parameters["LogDepthConstant"];
   LogDepthOffset = &parameters["LogDepthOffset"];
