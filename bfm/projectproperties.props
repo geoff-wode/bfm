@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros">
     <SDL2_DIR>D:\Dev\libraries\SDL2-2.0.0\</SDL2_DIR>
     <SDL_DIR>D:\Dev\libraries\SDL-1.2.15\</SDL_DIR>
-    <BOOST_DIR>D:\Dev\libraries\boost_1_53_0\</BOOST_DIR>
+    <BOOST_DIR>D:\Dev\libraries\boost_1_54_0\</BOOST_DIR>
     <GLSDK_DIR>D:\Dev\libraries\glsdk_0.4.4\</GLSDK_DIR>
     <GLM_DIR>D:\Dev\libraries\glm\</GLM_DIR>
     <SOIL_DIR>D:\Dev\libraries\soil\</SOIL_DIR>

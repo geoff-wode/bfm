@@ -245,23 +245,21 @@ void Device::ApplyTextureUnits(Texture2D* const textures[])
 {
   for (size_t i = 0; i < RenderState::MaxTextures; ++i)
   {
-    glActiveTexture(GL_TEXTURE0 + i);
     if (textures[i] != renderState.textureUnits[i])
     {
       renderState.textureUnits[i] = textures[i];
       if (renderState.textureUnits[i])
       {
-        glBindTexture(GL_TEXTURE_2D, renderState.textureUnits[i]->texture);
-        glBindSampler(i, renderState.textureUnits[i]->sampler);
+        renderState.textureUnits[i]->Activate(i);
+        renderState.textureUnits[i]->BindToTextureUnit(i);
       }
       else
       {
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindSampler(i, 0);
+        Texture2D::UnbindTextureUnit(i);
       }
     }
   }
-  glActiveTexture(GL_TEXTURE0 + RenderState::MaxTextures);
+  //glActiveTexture(GL_TEXTURE0 + RenderState::MaxTextures);
 }
 //-----------------------------------------------------------
 void Device::ApplyEffect(Effect* effect)

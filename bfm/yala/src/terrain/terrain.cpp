@@ -29,7 +29,7 @@
 
 //---------------------------------------------------------------
 
-struct Vertex
+struct TerrainVertex
 {
   glm::vec2 position;
 };
@@ -55,7 +55,7 @@ static const size_t indexCount = 2 * gridSize * (gridSize - 1);
 //---------------------------------------------------------------
 
 static void BuildGeometry(VertexArray& geometry);
-static void BuildGrid(int size, Vertex vertices[]);
+static void BuildGrid(int size, TerrainVertex vertices[]);
 static void BuildIndices(int size, unsigned short indices[]);
 
 //---------------------------------------------------------------
@@ -145,7 +145,7 @@ bool Terrain::Initialise()
   const float log2Grid = glm::log(2.0f * gridSize * gridSize, 2.0f);
   maxLodLevel = size_t(glm::max(1U, (size_t)(log2Width - log2Grid)));
   
-  if (!effect.Load("effects\\terrain.glsl", "Terrain")) { return false; }
+  if (!effect.Load("assets\\effects\\terrain.glsl", "Terrain")) { return false; }
   effect.MaxHeight->Set(abs(heightRange.x + heightRange.y));
 
   rootNode = boost::make_shared<Node>(width, maxLodLevel);
@@ -328,7 +328,7 @@ static float ComputeHeight(glm::vec3 p, float octaves, float roughness, float la
 
 //---------------------------------------------------------------
 
-static void BuildGrid(int size, Vertex vertices[])
+static void BuildGrid(int size, TerrainVertex vertices[])
 {
   const float increment = 1.0f / (float)(size - 1);
   for (int z = 0; z < size; ++z)
@@ -371,13 +371,13 @@ static void BuildGeometry(VertexArray& geometry)
 {
   static const VertexAttribute attributes[] =
   {
-    { VertexSemantic::Position, GL_FLOAT, 2, offsetof(Vertex, position) }
+    { VertexSemantic::Position, GL_FLOAT, 2, offsetof(TerrainVertex, position) }
   };
 
   VertexLayout vertexLayout;
   vertexLayout.AddAttribute(attributes[0]);
 
-  Vertex vertices[vertexCount];
+  TerrainVertex vertices[vertexCount];
   BuildGrid(gridSize, vertices);
   boost::shared_ptr<VertexBuffer> vertexBuffer(new VertexBuffer());
   vertexBuffer->Initialise(vertexLayout, vertexCount, GL_STATIC_DRAW, vertices);

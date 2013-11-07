@@ -8,6 +8,7 @@
 #include <utils.h>
 #include <memory>
 #include <terrain/terrain.h>
+#include <textrenderer/font.h>
 #include <scenestate.h>
 #include <boost/make_shared.hpp>
 
@@ -26,6 +27,7 @@ static bool quit = false;
 static ClearState clearState;
 static Camera camera;
 static Device device;
+static FontManager fontManager;
 
 //-------------------------------------------------------------------
 
@@ -98,6 +100,9 @@ int main(int argc, char* argv[])
   device.Initialise(1280, 720, "");
   scene.sceneState.device = &device;
 
+  fontManager.Initialise(glm::ivec2(device.BackbufferWidth, device.BackbufferHeight));
+  boost::shared_ptr<Font> font = fontManager.LoadFont("assets\\fonts\\01DigiGraphics.ttf", 32);
+
   static const float width = 10000;
   // Compute height range from 20 metres below sea-level to a maximum of some
   // fraction of the width.
@@ -145,6 +150,8 @@ int main(int argc, char* argv[])
     device.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, clearState);
 
     DrawScene(scene);
+
+    fontManager.DrawText(font, &device, "abcdefghijklmnopqrstuvwxyz", glm::ivec2(100, 500), glm::vec4(1,0,0,1));
 
     device.SwapBuffers();
   }

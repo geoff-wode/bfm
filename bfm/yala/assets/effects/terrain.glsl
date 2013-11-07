@@ -1,3 +1,4 @@
+#include "semantics.glsl"
 #include "common.glsl"
 
 //---------------------------------------------------------
@@ -6,7 +7,7 @@ uniform float MaxHeight = 1000.0f;
 
 //---------------------------------------------------------
 
-struct VSOut
+interface VSOut
 {
   vec4 clip;
 };
@@ -54,13 +55,13 @@ shader VS
 
 shader FS
   (
-    in VSOut vsIn,
+    in VSOut inputs,
     out vec4 colour
   )
 {
   colour = vec4(1,1,1,1);
 
-  gl_FragDepth = ComputeDepth(vsIn.clip.z);
+  gl_FragDepth = ComputeDepth(inputs.clip.z);
 }
 
 //---------------------------------------------------------

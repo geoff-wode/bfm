@@ -1,5 +1,6 @@
+#include <logging.h>
 #include <vertexbuffer.h>
-
+#include <memory>
 
 VertexBuffer::VertexBuffer()
 {

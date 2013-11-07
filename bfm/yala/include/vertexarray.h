@@ -17,6 +17,7 @@ public:
   void Initialise(boost::shared_ptr<VertexBuffer> vertexBuffer, boost::shared_ptr<IndexBuffer> indexBuffer);
 
   void Enable() { glBindVertexArray(vao); }
+  static void Disable() { glBindVertexArray(0); }
 
   boost::shared_ptr<VertexBuffer> GetVertexBuffer() const { return vertexBuffer; }
   boost::shared_ptr<IndexBuffer> GetIndexBuffer() const { return indexBuffer; }

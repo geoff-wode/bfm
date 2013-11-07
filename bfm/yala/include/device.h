@@ -8,7 +8,7 @@
 #include <boost/noncopyable.hpp>
 #include <effect.h>
 #include <vertexarray.h>
-#include <texture2d.h>
+#include <textures/texture2d.h>
 #include <boost/shared_ptr.hpp>
 
 //----------------------------------------------------------
