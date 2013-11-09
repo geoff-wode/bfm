@@ -203,7 +203,7 @@ void FontManager::DrawText(boost::shared_ptr<Font> font, Device* const device, c
     {
       Glyph* glyph = NULL;
 
-      const auto glyphPos = font->glyphs.find(*c);
+      auto glyphPos = font->glyphs.find(*c);
       if (font->glyphs.cend() != glyphPos)
       {
         glyph = glyphPos->second.get();
@@ -233,15 +233,15 @@ void FontManager::DrawText(boost::shared_ptr<Font> font, Device* const device, c
         renderState.vertexArray->GetVertexBuffer()->SetData(&vertices, VerticesPerCall, nextVertex);
         renderState.vertexArray->GetVertexBuffer()->Disable();
 
-        nextVertex += VerticesPerCall;
-        ASSERT(nextVertex < VerticesInBuffer);
-
         //renderState.textureUnits[GlyphTextureSlot] = &glyph->texture;
 
         //glyph->texture.BindToTextureUnit(GlyphTextureSlot);
         glBindTexture(GL_TEXTURE_2D, glyph->texture.texture);
 
         device->Draw(GL_TRIANGLE_STRIP, nextVertex, VerticesPerCall, renderState);
+
+        nextVertex += VerticesPerCall;
+        ASSERT(nextVertex < VerticesInBuffer);
       }
     }
 
