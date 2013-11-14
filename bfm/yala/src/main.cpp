@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
   scene.sceneState.device = &device;
 
   fontManager.Initialise(glm::ivec2(device.BackbufferWidth, device.BackbufferHeight));
-  boost::shared_ptr<Font> font = fontManager.LoadFont("assets\\fonts\\01DigiGraphics.ttf", 32);
+  boost::shared_ptr<Font> font = fontManager.LoadFont("assets\\fonts\\01DigiGraphics@12");
 
   static const float width = 10000;
   // Compute height range from 20 metres below sea-level to a maximum of some

@@ -11,26 +11,10 @@
 #include <cstring>
 #include <logging.h>
 #include <fileio.h>
+#include <SOIL.h>
 #include <textrenderer/font.h>
 #include <boost/make_shared.hpp>
-
-#include <ft2build.h>
-#include FT_MODULE_H
-
-//---------------------------------------------------------------------
-// Yeah FT2, make me jump through a hoop for that error string fish!
-#undef __FTERRORS_H__                      
-#define FT_ERRORDEF( e, v, s )  { e, s },  
-#define FT_ERROR_START_LIST     {          
-#define FT_ERROR_END_LIST       { 0, 0 } };
-                                             
-const struct                               
-{                                          
-  int          err_code;                   
-  const char*  err_msg;                    
-} ft_errors[] =           // this is "right" and not just a dangling bit of syntax (ffs!)                                             
-#include FT_ERRORS_H
-static const size_t FTErrorCount = sizeof(ft_errors) / sizeof(ft_errors[0]);
+#include <glm/ext.hpp>
 
 //----------------------------------------------------------------------
 
@@ -38,6 +22,37 @@ static const size_t FTErrorCount = sizeof(ft_errors) / sizeof(ft_errors[0]);
 struct Vertex
 {
   glm::vec4 position;
+};
+
+struct GlyphMetaData
+{
+  size_t code;
+  glm::i8vec2 bearing;
+  glm::i8 penAdvance;
+  glm::i8vec2 size;
+  glm::half textureLeftEdge;
+  glm::hvec2 textureSize;
+};
+
+struct Glyph
+{
+  glm::ivec2 bearing;
+  glm::ivec2 size;
+  size_t penAdvance;
+  float textureLeftEdge;
+  glm::vec2 textureSize;
+};
+
+struct Font
+{
+  Font();
+  ~Font();
+
+  Texture2D texture;
+
+  size_t spaceAdvance;
+  std::vector<Glyph> glyphs;
+  std::unordered_map<size_t, Glyph*> glyphMap;
 };
 
 static const VertexAttribute vertexAttribute =
@@ -49,18 +64,15 @@ static const VertexAttribute vertexAttribute =
 // Improve performance by using a texture atlas to enable multiple character positions to be
 // passed to the GPU at once.
 // Improve things even more by using a geometry shader.
-static const size_t VerticesPerCall = 4;
+static const size_t VerticesPerGlyph = 4;
 static const size_t VerticesInBuffer = 2048;
-static Vertex vertices[VerticesPerCall];
+static Vertex vertices[VerticesInBuffer * VerticesPerGlyph];
 
 static const size_t GlyphTextureSlot = 0;
 
 //----------------------------------------------------------------------
 
-static void* Allocate(FT_Memory memory, long size);
-static void Deallocate(FT_Memory memory, void* block);
-static void* Reallocate(FT_Memory memory, long currentSize, long newSize, void* block);
-static const char* const FreeTypeError(int e);
+static boost::shared_ptr<Font> CreateFont(const char* const filename);
 
 //----------------------------------------------------------------------
 
@@ -70,7 +82,6 @@ Font::Font()
 
 Font::~Font()
 {
-  FT_Done_Face(face);
 }
 
 //----------------------------------------------------------------------
@@ -94,30 +105,12 @@ FontManager::~FontManager()
 {
   // make sure the cached fonts are individually tidied away _before_ the library is shut down:
   fonts.clear();
-
-  // library shud down:
-  FT_Done_Library(freetype);
 }
 
 //----------------------------------------------------------------------
 bool FontManager::Initialise(const glm::ivec2& screenResolution)
 {
-  static struct FT_MemoryRec_ memoryManagement =
-  {
-    NULL,
-    Allocate,
-    Deallocate,
-    Reallocate
-  };
-
   this->screenResolution = screenResolution;
-
-  if (FT_New_Library(&memoryManagement, &freetype))
-  {
-    LOG("did not initialise FreeType library instance\n");
-    return false;
-  }
-  FT_Add_Default_Modules(freetype);
 
   if (!effect.Load("assets\\effects\\fonteffect.glsl", "RenderFont"))
   {
@@ -149,36 +142,17 @@ bool FontManager::Initialise(const glm::ivec2& screenResolution)
 }
 
 //----------------------------------------------------------------------
-boost::shared_ptr<Font> FontManager::LoadFont(const char* const filename, size_t pointSize)
+boost::shared_ptr<Font> FontManager::LoadFont(const char* const filename)
 {
   // Already created a font of this style and size..?
   auto fontPos = fonts.find(filename);
   if (fonts.cend() != fontPos)
   {
-    if (fontPos->second->pointSize == pointSize)
-    {
-      return fontPos->second; // yes.
-    }
+    return fontPos->second; // yes.
   }
 
   // No such font, create it...
-  boost::shared_ptr<Font> font(new Font());
-  FT_Error err = FT_New_Face(freetype, filename, 0, &font->face);
-  if (err)
-  {
-    LOG("font %s load failed : %s\n", filename, FreeTypeError(err));
-    return NULL;
-  }
-  LOG("font %s loaded\n", filename);
-  font->pointSize = pointSize;
-  std::strncpy(font->filename, filename, sizeof(font->filename - 1));
-  // ...and add it to the cache...
-  fonts[font->filename] = font;
-
-  // Set the size:
-  static const int dpi = 96;
-  pointSize *= 64;
-  FT_Set_Char_Size(font->face, pointSize, pointSize, dpi, dpi);
+  boost::shared_ptr<Font> font = CreateFont(filename);
 
   return font;
 }
@@ -186,66 +160,61 @@ boost::shared_ptr<Font> FontManager::LoadFont(const char* const filename, size_t
 //----------------------------------------------------------------------
 void FontManager::DrawText(boost::shared_ptr<Font> font, Device* const device, const char* const text, const glm::ivec2& position, const glm::vec4& colour)
 {
+  ASSERT(strlen(text) <= VerticesInBuffer);
+
   renderState.vertexArray = &geometry[geometrySelector];
-  size_t nextVertex = 0;
 
   effect.FontColour->Set(colour);
 
   glm::ivec2 origin = position;
-  FT_GlyphSlot slot = font->face->glyph;
 
   glActiveTexture(GL_TEXTURE0 + GlyphTextureSlot);
   sampler->Bind(GlyphTextureSlot);
+  glBindTexture(GL_TEXTURE_2D, font->texture.texture);
 
-  for (const char* c = text; '\0' != *c; ++c)
+  size_t nextVertex;
+  for (nextVertex = 0; text[nextVertex] != '\0'; ++nextVertex)
   {
-    if (' ' != *c)
+    const char c = text[nextVertex];
+
+    if (' ' != c)
     {
       Glyph* glyph = NULL;
 
-      auto glyphPos = font->glyphs.find(*c);
-      if (font->glyphs.cend() != glyphPos)
+      auto glyphPos = font->glyphMap.find(c);
+      if (font->glyphMap.cend() != glyphPos)
       {
-        glyph = glyphPos->second.get();
-      }
-      else
-      {
-        glyph = CreateGlyphTexture(*c, font);
+        glyph = glyphPos->second;
       }
 
       if (glyph)
       {
-        // See http://www.freetype.org/freetype2/docs/tutorial/step2.html for a description of the metrics...
-        const float left = origin.x + glyph->left;
-        const float right = left + glyph->width;
-        const float top = origin.y + glyph->top;
-        const float bottom = origin.y + glyph->base;
-        const float width = glyph->width;
-        const float height = glyph->height;
+        const int width = glyph->size.x;
+        const int height = glyph->size.y;
+        const int left = origin.x + glyph->bearing.x;
+        const int right = left + width;
+        const int top = origin.y + glyph->bearing.y;
+        const int bottom = top - height;
 
-        // Create a textured quad BUT the FT glyph bitmap is upside down relative to GL:
-        vertices[0].position = glm::vec4(left,  bottom, 0, 1);
-        vertices[1].position = glm::vec4(left,  top,    0, 0);
-        vertices[2].position = glm::vec4(right, bottom, 1, 1);
-        vertices[3].position = glm::vec4(right, top,    1, 0);
-
-        renderState.vertexArray->GetVertexBuffer()->Enable();
-        renderState.vertexArray->GetVertexBuffer()->SetData(&vertices, VerticesPerCall, nextVertex);
-        renderState.vertexArray->GetVertexBuffer()->Disable();
-
-        //renderState.textureUnits[GlyphTextureSlot] = &glyph->texture;
-
-        //glyph->texture.BindToTextureUnit(GlyphTextureSlot);
-        glBindTexture(GL_TEXTURE_2D, glyph->texture.texture);
-
-        device->Draw(GL_TRIANGLE_STRIP, nextVertex, VerticesPerCall, renderState);
-
-        nextVertex += VerticesPerCall;
-        ASSERT(nextVertex < VerticesInBuffer);
+        // Create a textured quad...
+        Vertex* v = &vertices[VerticesPerGlyph * nextVertex];
+        v[0].position = glm::vec4(left,  bottom, glyph->textureLeftEdge, glyph->textureSize.y);
+        v[1].position = glm::vec4(left,  top,    glyph->textureLeftEdge, 0);
+        v[2].position = glm::vec4(right, bottom, glyph->textureLeftEdge + glyph->textureSize.x, 0);
+        v[3].position = glm::vec4(right, top,    glyph->textureLeftEdge + glyph->textureSize.x, glyph->textureSize.y);
       }
+      origin.x += glyph->penAdvance;
+    }
+    else
+    {
+      origin.x += font->spaceAdvance;
     }
 
-    origin.x += slot->advance.x >> 6;
+    renderState.vertexArray->GetVertexBuffer()->Enable();
+    renderState.vertexArray->GetVertexBuffer()->SetData(&vertices, VerticesPerGlyph * nextVertex);
+    renderState.vertexArray->GetVertexBuffer()->Disable();
+
+    device->Draw(GL_TRIANGLE_STRIP, nextVertex, VerticesPerGlyph, renderState);
   }
 
   // Switch to next buffer (with wraparound)
@@ -253,64 +222,50 @@ void FontManager::DrawText(boost::shared_ptr<Font> font, Device* const device, c
 }
 
 //----------------------------------------------------------------------
-Glyph* FontManager::CreateGlyphTexture(char c, boost::shared_ptr<Font> font)
+
+static boost::shared_ptr<Font> CreateFont(const char* const filename)
 {
-  if (FT_Load_Char(font->face, c, FT_LOAD_RENDER))
+  boost::shared_ptr<Font> font(new Font());
+
+  std::vector<char> textureName(strlen(filename) + sizeof(".dds"));
+  sprintf(textureName.data(), "%s.dds", filename);
+  font->texture.Load(textureName.data(), GL_ALPHA, GL_UNSIGNED_BYTE, GL_ALPHA);
+ 
+  std::vector<char> metadataFilename(strlen(filename) + sizeof(".dat"));
+  sprintf(metadataFilename.data(), "%s.dat", filename);
+
+  FILE* file(fopen(metadataFilename.data(), "rb"));
+
+  size_t glyphCount;
+  fread(&glyphCount, sizeof(glyphCount), 1, file);
+  font->glyphs.resize(glyphCount);
+  fread(&font->spaceAdvance, sizeof(font->spaceAdvance), 1, file);
+
+  for (size_t i = 0; i < glyphCount; ++i)
   {
-    LOG("did not render glyph for '%c'\n", c);
-    return NULL;
+    GlyphMetaData metadata;
+
+#define LOAD_GLYPH_DATA(file, member) fread(&member, sizeof(member), 1, file);
+    LOAD_GLYPH_DATA(file, metadata.code);
+    LOAD_GLYPH_DATA(file, metadata.bearing.x);
+    LOAD_GLYPH_DATA(file, metadata.bearing.y);
+    LOAD_GLYPH_DATA(file, metadata.size.y);
+    LOAD_GLYPH_DATA(file, metadata.size.y);
+    LOAD_GLYPH_DATA(file, metadata.penAdvance);
+    LOAD_GLYPH_DATA(file, metadata.textureLeftEdge);
+    LOAD_GLYPH_DATA(file, metadata.textureSize.x);
+    LOAD_GLYPH_DATA(file, metadata.textureSize.y);
+
+    font->glyphs[i].bearing = metadata.bearing;
+    font->glyphs[i].penAdvance = metadata.penAdvance;
+    font->glyphs[i].size = metadata.size;
+    font->glyphs[i].textureLeftEdge = metadata.textureLeftEdge;
+    font->glyphs[i].textureSize = metadata.textureSize;
+
+    font->glyphMap[metadata.code] = &font->glyphs[i];
   }
 
-  FT_GlyphSlot slot = font->face->glyph;
-  boost::shared_ptr<Glyph> glyph(new Glyph());
+  fclose(file);
 
-  glyph->left = float(slot->metrics.horiBearingX >> 6);
-  glyph->top = float(slot->metrics.horiBearingY >> 6);
-  glyph->base = glyph->top - float(slot->metrics.height >> 6);
-  glyph->width = float(slot->metrics.width >> 6);
-  glyph->height = float(slot->metrics.height >> 6);
-
-  // Ensure upload of data to the texture is byte-aligned (and restore the current alignemt on exit)
-  GLint alignment;
-  glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-  glyph->texture.AssignSampler(sampler);
-  glyph->texture.Load(slot->bitmap.buffer, slot->bitmap.pitch, slot->bitmap.rows, GL_ALPHA, GL_UNSIGNED_BYTE, GL_ALPHA);
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-
-  font->glyphs[c] = glyph;
-
-  return font->glyphs[c].get();
-}
-
-//----------------------------------------------------------------------
-
-static void* Allocate(FT_Memory memory, long size)
-{
-  return malloc(size);
-}
-
-static void Deallocate(FT_Memory memory, void* block)
-{
-  free(block);
-}
-
-static void* Reallocate(FT_Memory memory, long currentSize, long newSize, void* block)
-{
-  if (currentSize != newSize)
-  {
-    block = realloc(block, newSize);
-  }
-  return block;
-}
-
-static const char* const FreeTypeError(int e)
-{
-  for (int i = 0; i < FTErrorCount; ++i)
-  {
-    if (ft_errors[i].err_code == e) { return ft_errors[i].err_msg; }
-  }
-  return "unknown";
+  return font;
 }

@@ -23,7 +23,7 @@
     <ClCompile Include="src\textures\sampler.cpp" />
     <ClCompile Include="src\textures\sampler2d.cpp" />
     <ClCompile Include="src\textures\texture2d.cpp" />
-    <ClCompile Include="src\textures\texturebase.cpp" />
+    <ClCompile Include="src\textures\textureunit.cpp" />
     <ClCompile Include="src\uniformbuffer.cpp" />
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\vertexarray.cpp" />
@@ -55,7 +55,8 @@
     <ClInclude Include="include\textures\sampler.h" />
     <ClInclude Include="include\textures\sampler2d.h" />
     <ClInclude Include="include\textures\texture2d.h" />
-    <ClInclude Include="include\textures\texturebase.h" />
+    <ClInclude Include="include\textures\texture.h" />
+    <ClInclude Include="include\textures\textureunit.h" />
     <ClInclude Include="include\uniformbuffer.h" />
     <ClInclude Include="include\utils.h" />
     <ClInclude Include="include\vertexarray.h" />
