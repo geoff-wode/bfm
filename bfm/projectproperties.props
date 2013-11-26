@@ -2,28 +2,26 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--  <ImportGroup Label="PropertySheets" /> -->
   <PropertyGroup Label="UserMacros">
-    <SDL2_DIR>D:\Dev\libraries\SDL2-2.0.0\</SDL2_DIR>
-    <SDL_DIR>D:\Dev\libraries\SDL-1.2.15\</SDL_DIR>
-    <BOOST_DIR>D:\Dev\libraries\boost_1_54_0\</BOOST_DIR>
-    <GLSDK_DIR>D:\Dev\libraries\glsdk_0.4.4\</GLSDK_DIR>
-    <GLM_DIR>D:\Dev\libraries\glm\</GLM_DIR>
-    <SOIL_DIR>D:\Dev\libraries\soil\</SOIL_DIR>
-    <FREEIMAGE_DIR>D:\Dev\libraries\FreeImage\</FREEIMAGE_DIR>
-    <ASSIMP_DIR>D:\Program Files\Assimp\</ASSIMP_DIR>
-    <IMAGE_MAGICK_DIR>D:\Dev\bin\ImageMagick-6.8.6-9\</IMAGE_MAGICK_DIR>
-    <GLFX_DIR>D:\Dev\libraries\glfx\</GLFX_DIR>
-    <GLEW_DIR>D:\Dev\libraries\glew-1.10.0\</GLEW_DIR>
-    <FREETYPE_DIR>D:\Dev\libraries\freetype-2.5.0.1\</FREETYPE_DIR>
+    <THIRD_PARTY_DIR>$(SolutionDir)3rdParty\</THIRD_PARTY_DIR>
+    <SDL2_DIR>$(THIRD_PARTY_DIR)SDL2-2.0.0\</SDL2_DIR>
+    <SDL_DIR>$(THIRD_PARTY_DIR)SDL-1.2.15\</SDL_DIR>
+    <BOOST_DIR>$(THIRD_PARTY_DIR)boost_1_54_0\</BOOST_DIR>
+    <GLM_DIR>$(THIRD_PARTY_DIR)glm\</GLM_DIR>
+    <SOIL_DIR>$(THIRD_PARTY_DIR)soil\</SOIL_DIR>
+    <GLFX_DIR>$(THIRD_PARTY_DIR)glfx\</GLFX_DIR>
+    <GLEW_DIR>$(THIRD_PARTY_DIR)glew-1.10.0\</GLEW_DIR>
+    <FREETYPE_DIR>$(THIRD_PARTY_DIR)freetype-2.5.0.1\</FREETYPE_DIR>
+    <DIRENT_DIR>$(THIRD_PARTY_DIR)dirent-1.13\</DIRENT_DIR>
   </PropertyGroup>
   <PropertyGroup>
-    <IncludePath>$(GLFX_DIR);$(FREEIMAGE_DIR)include;$(SDL2_DIR)include;$(SOIL_DIR)src;$(BOOST_DIR);$(GLSDK_DIR)glm;$(GLM_DIR)\;$(ASSIMP_DIR)include;$(DXSDK_DIR)\Include;$(DXSDK_DIR)\Utilities\Source\dxtex;$(GLEW_DIR)include;$(FREETYPE_DIR)\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(GLM_DIR)\;$(BOOST_DIR);$(GLEW_DIR)include;$(DIRENT_DIR)include;$(GLFX_DIR);$(SDL2_DIR)include;$(SOIL_DIR)src;$(FREETYPE_DIR)\include;$(DXSDK_DIR)\Include;$(DXSDK_DIR)\Utilities\Source\dxtex;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup>
-    <LibraryPath>$(GLEW_DIR)lib\Release\$(PlatformName);$(GLFX_DIR)$(PlatformShortName);$(ASSIMP_DIR)lib\$(PlatformShortName);$(FREEIMAGE_DIR)lib\$(PlatformShortName);$(SDL2_DIR)lib\$(PlatformShortName);$(FREETYPE_DIR)\objs\win32\vc2010;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(SOIL_DIR)lib</LibraryPath>
+    <LibraryPath>$(GLEW_DIR)lib\Release\$(PlatformName);$(GLFX_DIR)$(PlatformShortName);$(SDL2_DIR)lib\$(PlatformShortName);$(FREETYPE_DIR)\objs\win32\vc2010;$(VCInstallDir)lib;$(SOIL_DIR)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>glew32.lib;glfx.lib;assimp.lib;FreeImage.lib;SDL2main.lib;SDL2.lib;SOIL.lib;freetype250.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glfx.lib;SDL2main.lib;SDL2.lib;SOIL.lib;freetype250.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -35,20 +33,16 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <BuildMacro Include="THIRD_PARTY_DIR">
+      <Value>$(THIRD_PARTY_DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
     <BuildMacro Include="SDL2_DIR">
       <Value>$(SDL2_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
-    <BuildMacro Include="SDL_DIR">
-      <Value>$(SDL_DIR)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
     <BuildMacro Include="BOOST_DIR">
       <Value>$(BOOST_DIR)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="GLSDK_DIR">
-      <Value>$(GLSDK_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="GLM_DIR">
@@ -57,18 +51,6 @@
     </BuildMacro>
     <BuildMacro Include="SOIL_DIR">
       <Value>$(SOIL_DIR)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="FREEIMAGE_DIR">
-      <Value>$(FREEIMAGE_DIR)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="ASSIMP_DIR">
-      <Value>$(ASSIMP_DIR)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="IMAGE_MAGICK_DIR">
-      <Value>$(IMAGE_MAGICK_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="GLFX_DIR">
@@ -81,6 +63,10 @@
     </BuildMacro>
     <BuildMacro Include="FREETYPE_DIR">
       <Value>$(FREETYPE_DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="DIRENT_DIR">
+      <Value>$(DIRENT_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>

@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "yala", "yala\yala.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fontcreator", "fontcreator\fontcreator.vcxproj", "{F02E2119-A329-4350-9A06-43F114ADB498}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scratch", "scratch\scratch.vcxproj", "{C417167D-7F0E-47BB-A96B-B2DC207317EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -45,6 +47,12 @@ Global
 		{F02E2119-A329-4350-9A06-43F114ADB498}.Release|Win32.ActiveCfg = Release|Win32
 		{F02E2119-A329-4350-9A06-43F114ADB498}.Release|Win32.Build.0 = Release|Win32
 		{F02E2119-A329-4350-9A06-43F114ADB498}.Release|x64.ActiveCfg = Release|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Debug|Win32.Build.0 = Debug|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Debug|x64.ActiveCfg = Debug|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Release|Win32.ActiveCfg = Release|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Release|Win32.Build.0 = Release|Win32
+		{C417167D-7F0E-47BB-A96B-B2DC207317EB}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

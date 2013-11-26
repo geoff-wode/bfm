@@ -2,6 +2,7 @@
 #include <textures/texture2d.h>
 #include <device.h>
 #include <SOIL.h>
+#include <utils.h>
 
 //------------------------------------------------------------------------
 
@@ -16,54 +17,51 @@ Texture2D::~Texture2D()
 }
 
 //------------------------------------------------------------------------
-void Texture2D::Load(const void* const data, size_t width, size_t height, GLenum dataFormat, GLenum dataType, GLenum textureFormat)
+void Texture2D::Load(const void* const data, GLenum dataFormat, GLenum dataType, const Texture2DDescription& description)
 {
   // Make sure none of the texture slots bound to the device are modified. (Gotta love global state!)
-  glActiveTexture(GL_TEXTURE0 + RenderState::MaxTextures);
+  MakeActive(RenderState::MaxTextures);
   Bind();
+  CALLONEXIT(glBindTexture, texture, 0);
 
   glTexImage2D(
     GL_TEXTURE_2D,
     0,
     textureFormat,
-    width,
-    height,
+    description.size.x,
+    description.size.y,
     0,
     dataFormat,
     dataType,
     data);
 
-  this->width = width;
-  this->height = height;
   this->dataFormat = dataFormat;
   this->dataType = dataType;
-  this->textureFormat = textureFormat;
-
-  Unbind();
+  this->description = description;
 }
 
 //------------------------------------------------------------------------
-void Texture2D::Load(const char* const filename, GLenum dataFormat, GLenum dataType, GLenum textureFormat)
+void Texture2D::Load(const char* const filename, GLenum dataFormat, GLenum dataType, const Texture2DDescription& description)
 {
   const unsigned int flags = SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_MIPMAPS;
 
   const unsigned int channels = (dataFormat == GL_ALPHA) ? SOIL_LOAD_L : SOIL_LOAD_AUTO;
 
-  glActiveTexture(GL_TEXTURE0 + RenderState::MaxTextures);
+  MakeActive(RenderState::MaxTextures);
   Bind();
+  CALLONEXIT(glBindTexture, texture, 0);
 
   if (SOIL_load_OGL_texture(filename, channels, texture, flags))
   {
     this->dataFormat = dataFormat;
     this->dataType = dataType;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint*)&width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint*)&height);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, (GLint*)&textureFormat);
+    this->description = description;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint*)&description.size.x);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint*)&description.size.y);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, (GLint*)&description.internalFormat);
   }
   else
   {
     LOG("error loading texture %s: %s\n", filename, SOIL_last_result());
   }
-
-  Unbind();
 }

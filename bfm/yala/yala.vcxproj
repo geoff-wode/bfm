@@ -11,25 +11,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\camera.cpp" />
-    <ClCompile Include="src\device.cpp" />
-    <ClCompile Include="src\effect.cpp" />
-    <ClCompile Include="src\effectuniform.cpp" />
-    <ClCompile Include="src\fileio.cpp" />
-    <ClCompile Include="src\textrenderer\font.cpp" />
-    <ClCompile Include="src\indexbuffer.cpp" />
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\terrain\terrain.cpp" />
-    <ClCompile Include="src\textures\sampler.cpp" />
-    <ClCompile Include="src\textures\sampler2d.cpp" />
-    <ClCompile Include="src\textures\texture2d.cpp" />
-    <ClCompile Include="src\textures\textureunit.cpp" />
-    <ClCompile Include="src\uniformbuffer.cpp" />
-    <ClCompile Include="src\utils.cpp" />
-    <ClCompile Include="src\vertexarray.cpp" />
-    <ClCompile Include="src\vertexattribute.cpp" />
-    <ClCompile Include="src\vertexbuffer.cpp" />
-    <ClCompile Include="src\vertexlayout.cpp" />
+    <ClCompile Include="src\core\buffers\indexbuffer.cpp" />
+    <ClCompile Include="src\core\buffers\uniformbuffer.cpp" />
+    <ClCompile Include="src\core\buffers\vertexbuffer.cpp" />
+    <ClCompile Include="src\core\context.cpp" />
+    <ClCompile Include="src\core\device.cpp" />
+    <ClCompile Include="src\core\effect.cpp" />
+    <ClCompile Include="src\core\effectuniform.cpp" />
+    <ClCompile Include="src\core\keyboard.cpp" />
+    <ClCompile Include="src\core\logging.cpp" />
+    <ClCompile Include="src\core\vertexarray.cpp" />
+    <ClCompile Include="src\core\vertexlayout.cpp" />
+    <ClCompile Include="src\core\window.cpp" />
+    <ClCompile Include="src\core\fileio.cpp" />
+    <ClCompile Include="src\game\cameras\camera.cpp" />
+    <ClCompile Include="src\game\cameras\freecamera.cpp" />
+    <ClCompile Include="src\game\game.cpp" />
+    <ClCompile Include="src\game\main.cpp" />
+    <ClCompile Include="src\core\utils.cpp" />
+    <ClCompile Include="src\game\planet\planet.cpp" />
+    <ClCompile Include="src\game\planet\planeteffect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\basiceffect.glsl" />
@@ -39,30 +40,37 @@
     <None Include="assets\effects\terrain.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\camera.h" />
-    <ClInclude Include="include\device.h" />
-    <ClInclude Include="include\effect.h" />
-    <ClInclude Include="include\effectuniform.h" />
-    <ClInclude Include="include\fileio.h" />
-    <ClInclude Include="include\textrenderer\font.h" />
-    <ClInclude Include="include\indexbuffer.h" />
-    <ClInclude Include="include\logging.h" />
-    <ClInclude Include="include\terrain\terraineffect.h" />
-    <ClInclude Include="include\scenestate.h" />
-    <ClInclude Include="include\terrain\terrain.h" />
-    <ClInclude Include="include\terrain\vertex.h" />
-    <ClInclude Include="include\textrenderer\fonteffect.h" />
-    <ClInclude Include="include\textures\sampler.h" />
-    <ClInclude Include="include\textures\sampler2d.h" />
-    <ClInclude Include="include\textures\texture2d.h" />
-    <ClInclude Include="include\textures\texture.h" />
-    <ClInclude Include="include\textures\textureunit.h" />
-    <ClInclude Include="include\uniformbuffer.h" />
-    <ClInclude Include="include\utils.h" />
-    <ClInclude Include="include\vertexarray.h" />
-    <ClInclude Include="include\vertexattribute.h" />
-    <ClInclude Include="include\vertexbuffer.h" />
-    <ClInclude Include="include\vertexlayout.h" />
+    <ClInclude Include="include\core\device.h" />
+    <ClInclude Include="include\core\keyboard.h" />
+    <ClInclude Include="include\core\propety.h" />
+    <ClInclude Include="include\core\textureunit.h" />
+    <ClInclude Include="include\core\window.h" />
+    <ClInclude Include="include\game\cameras\camera.h" />
+    <ClInclude Include="include\core\clearstate.h" />
+    <ClInclude Include="include\core\context.h" />
+    <ClInclude Include="include\core\drawstate.h" />
+    <ClInclude Include="include\core\rectangle.h" />
+    <ClInclude Include="include\core\renderstate\blending.h" />
+    <ClInclude Include="include\core\renderstate\culling.h" />
+    <ClInclude Include="include\core\renderstate\depthtest.h" />
+    <ClInclude Include="include\core\renderstate\renderstate.h" />
+    <ClInclude Include="include\core\effect\effect.h" />
+    <ClInclude Include="include\core\effect\effectuniform.h" />
+    <ClInclude Include="include\core\fileio.h" />
+    <ClInclude Include="include\game\cameras\freecamera.h" />
+    <ClInclude Include="include\game\game.h" />
+    <ClInclude Include="include\core\buffers\indexbuffer.h" />
+    <ClInclude Include="include\core\logging.h" />
+    <ClInclude Include="include\core\scenestate.h" />
+    <ClInclude Include="include\core\buffers\uniformbuffer.h" />
+    <ClInclude Include="include\core\utils.h" />
+    <ClInclude Include="include\core\vertexarray.h" />
+    <ClInclude Include="include\core\vertexattribute.h" />
+    <ClInclude Include="include\core\buffers\vertexbuffer.h" />
+    <ClInclude Include="include\core\vertexlayout.h" />
+    <ClInclude Include="include\game\planet\planet.h" />
+    <ClInclude Include="include\game\planet\planeteffect.h" />
+    <ClInclude Include="src\core\sdlattrs.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F4C72B93-FD55-48F9-BB8C-4B522AECDA77}</ProjectGuid>

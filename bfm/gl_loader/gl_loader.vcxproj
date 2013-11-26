@@ -144,7 +144,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="gl_core_4.2.h" />
     <ClInclude Include="gl_loader.h" />
   </ItemGroup>
   <ItemGroup>

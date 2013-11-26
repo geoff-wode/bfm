@@ -9,23 +9,19 @@
 class Texture
 {
 public:
-  virtual ~Texture()
-  {
-    glDeleteTextures(1, &texture);
-  }
+  virtual ~Texture() { glDeleteTextures(1, &texture); }
 
+  static void MakeActive(size_t slot) { glActiveTexture(GL_TEXTURE0 + slot); }
+
+  GLenum GetTextureType()   const { return type; }
   GLenum GetDataFormat()    const { return dataFormat; }
   GLenum GetDataType()      const { return dataType; }
   GLenum GetTextureFormat() const { return textureFormat; }
 
-  virtual void Bind() = 0;
-  virtual void Unbind() = 0;
+  virtual void Bind() { glBindTexture(type, texture); }
 
 protected:
-  Texture(GLenum type) : type(type)
-  {
-    glGenTextures(1, &texture);
-  }
+  Texture(GLenum type) : type(type) { glGenTextures(1, &texture); }
 
   GLuint texture;
   const GLenum type;
